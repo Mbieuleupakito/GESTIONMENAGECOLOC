@@ -71,57 +71,48 @@
     </main>
 
     <script>
-        /* --- CONFIGURATION SUPABASE --- */
-        const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM'; 
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        /* --- VARIABLES MODIFIABLES --- */
-        const colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
-        const missions = ["🚿 Douche G.", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine", "🚿 Douche D."];
-        let myChart; // Variable pour stocker le graphique
-
-        /* --- FONCTION : CALCUL DU NUMÉRO DE SEMAINE --- */
-        function getWeekNumber() {
-            const now = new Date();
-            const start = new Date(now.getFullYear(), 0, 1);
-            return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
-        }
-
-        /* --- FONCTION : CHANGER LE THÈME (DARK/LIGHT) --- */
-        function toggleDarkMode() {
-            document.getElementById('body').classList.toggle('dark');
-            localStorage.setItem('theme', document.getElementById('body').classList.contains('dark') ? 'dark' : 'light');
-        }
-
-        /* --- FONCTION : CHARGER TOUTES LES DONNÉES DEPUIS SUPABASE --- */
+        /* --- FONCTION : CHARGER TOUTES LES DONNÉES --- */
         async function fetchAllData() {
             const weekNum = getWeekNumber();
             
-            // Récupère les scores et les 6 derniers logs
+            // On récupère les scores et les logs
             const { data: users, error: uErr } = await _supabase.from('scores').select('*').order('points', { ascending: false });
-            const { data: logs, error: lErr } = await _supabase.from('logs').select('*').order('created_at', { descending: true }).limit(6);
+            const { data: logs, error: lErr } = await _supabase.from('logs').select('*').order('created_at', { descending: true }).limit(8);
 
             if (uErr || lErr) return;
 
-            // Affichage du classement (Leaderboard)
+            // 1. MISE À JOUR DU CLASSEMENT (Affichage clair des points cumulés)
             document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
                 <div class="flex justify-between items-center py-4">
                     <div class="flex items-center">
                         <span class="text-xs font-bold mr-3 ${i==0 ? 'text-yellow-500' : 'text-slate-300'}">${i==0 ? '👑' : i+1}</span>
-                        <span class="font-bold ${i==0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}">${u.name}</span>
+                        <span class="font-bold text-lg ${i==0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}">${u.name}</span>
                     </div>
-                    <span class="font-black text-slate-800 dark:text-white text-sm">${u.points} pts</span>
+                    <div class="text-right">
+                        <span class="font-black text-xl text-slate-800 dark:text-white">${u.points}</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase ml-1">pts</span>
+                    </div>
                 </div>`).join('');
 
-            // Affichage de l'historique (Logs)
-            document.getElementById('history-logs').innerHTML = logs.map(l => `
-                <div class="flex justify-between items-center border-b border-slate-300/20 pb-1">
-                    <span class="font-medium">${l.name} <span class="opacity-50">${l.type === 'malus' ? '🔴 malus' : '🟢 validé'}</span></span>
-                    <span class="opacity-40">${new Date(l.created_at).toLocaleTimeString([], {hour: '2h', minute:'2h'})}</span>
-                </div>`).join('');
+            // 2. MISE À JOUR DE L'HISTORIQUE (Détail des points gagnés/perdus)
+            document.getElementById('history-logs').innerHTML = logs.map(l => {
+                const isMalus = l.type === 'malus';
+                const colorClass = isMalus ? 'text-red-500' : 'text-green-500';
+                const prefix = l.points_gagnes > 0 ? '+' : '';
+                return `
+                <div class="flex justify-between items-center border-b border-slate-300/20 pb-2 mb-1">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${l.name}</span>
+                        <span class="opacity-50 text-[9px] uppercase">${l.type}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black ${colorClass}">${prefix}${l.points_gagnes} pts</span>
+                        <span class="opacity-40 text-[9px]">${new Date(l.created_at).toLocaleTimeString([], {hour: '2h', minute:'2h'})}</span>
+                    </div>
+                </div>`;
+            }).join('');
 
-            // Gestion de l'état des boutons de validation
+            // Gestion des boutons de validation
             users.forEach(u => {
                 const btn = document.querySelector(`button[data-name="${u.name}"]`);
                 if (btn && u.last_week_validated === weekNum) {
@@ -131,123 +122,15 @@
                 }
             });
 
-            // Affichage de la liste des malus dans le panneau Admin
+            // Liste des malus dans le panneau Admin
             document.getElementById('admin-malus-list').innerHTML = users.map(u => `
-                <div class="flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm">
-                    <span class="text-xs font-bold">${u.name}</span>
+                <div class="flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm mb-2">
+                    <span class="text-xs font-bold">${u.name} (${u.points} pts)</span>
                     <button onclick="applyMalus('${u.id}', '${u.name}', ${u.points})" class="bg-orange-500 text-white px-3 py-1 rounded-lg text-[10px] font-bold">-2 PTS</button>
                 </div>`).join('');
 
-            updateChart(users); // Met à jour le graphique
+            updateChart(users);
         }
-
-        /* --- FONCTION : VALIDER UNE TÂCHE ET AJOUTER DES POINTS --- */
-        async function addPoints(nom, btn) {
-            const weekNum = getWeekNumber();
-            btn.disabled = true; btn.innerHTML = "⏳";
-            try {
-                let { data: all } = await _supabase.from('scores').select('*');
-                const user = all.find(u => u.name === nom);
-
-                // Bloque si déjà fait cette semaine
-                if (user.last_week_validated === weekNum) throw new Error("Déjà fait !");
-
-                // Logique 5-4-3-2-1 : Compte combien ont déjà fini
-                const alreadyDone = all.filter(u => u.last_week_validated === weekNum).length;
-                let pts = Math.max(1, 5 - alreadyDone);
-
-                // Enregistre les points et la semaine dans Supabase
-                await _supabase.from('scores').update({ points: user.points + pts, last_week_validated: weekNum }).eq('id', user.id);
-                // Ajoute l'action dans l'historique
-                await _supabase.from('logs').insert([{ name: nom, points_gagnes: pts, type: 'validation' }]);
-                
-                alert(`Bravo ${nom} ! +${pts} pts.`);
-                fetchAllData();
-            } catch (e) { alert(e.message); fetchAllData(); }
-        }
-
-        /* --- FONCTION : APPLIQUER UN MALUS (ADMIN SEUL) --- */
-        async function applyMalus(id, nom, currentPoints) {
-            if(!confirm(`Malus -2 pts pour ${nom} ?`)) return;
-            await _supabase.from('scores').update({ points: currentPoints - 2 }).eq('id', id);
-            await _supabase.from('logs').insert([{ name: nom, points_gagnes: -2, type: 'malus' }]);
-            fetchAllData();
-        }
-
-        /* --- FONCTION : MISE À JOUR DU GRAPHIQUE --- */
-        function updateChart(users) {
-            const ctx = document.getElementById('scoreChart').getContext('2d');
-            const isDark = document.getElementById('body').classList.contains('dark');
-            if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: users.map(u => u.name),
-                    datasets: [{ 
-                        data: users.map(u => u.points), 
-                        backgroundColor: '#3b82f6', 
-                        borderRadius: 8,
-                        barThickness: 20
-                    }]
-                },
-                options: { 
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { 
-                        y: { beginAtZero: true, grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        /* --- FONCTION : REMISE À ZÉRO TOTALE (ADMIN SEUL) --- */
-        async function resetAllScores() {
-            if (!confirm("🚨 Reset complet ?")) return;
-            await _supabase.from('scores').update({ points: 0, last_week_validated: 0 }).neq('id', 0);
-            await _supabase.from('logs').delete().neq('id', 0);
-            location.reload();
-        }
-
-        /* --- SYSTÈME ADMIN (5 CLICS SUR LE TITRE) --- */
-        let adminClicks = 0;
-        document.getElementById('admin-trigger').onclick = () => {
-            if(++adminClicks === 5) {
-                document.getElementById('admin-panel').classList.toggle('hidden');
-                alert("👑 Pakito Admin Mode");
-                adminClicks = 0;
-            }
-        };
-
-        /* --- FONCTION D'INITIALISATION AU CHARGEMENT --- */
-        function init() {
-            // Applique le thème sauvegardé
-            if (localStorage.getItem('theme') === 'dark') document.getElementById('body').classList.add('dark');
-            
-            const week = getWeekNumber();
-            const day = new Date().getDay(); // 0 = Dimanche, 6 = Samedi
-            if (day === 0 || day === 6) document.getElementById('weekend-alert').classList.remove('hidden');
-            
-            document.getElementById('week-info').innerText = "Semaine " + week;
-
-            // Génération de la liste des missions avec rotation hebdomadaire
-            document.getElementById('tasks-container').innerHTML = colocs.map((nom, i) => {
-                const mission = missions[(i + week) % missions.length];
-                return `
-                <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex justify-between items-center mb-3">
-                    <div>
-                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${nom}</p>
-                        <p class="font-bold text-slate-800 text-sm">${mission}</p>
-                    </div>
-                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 text-white px-6 py-2 rounded-2xl text-xs font-black shadow-lg shadow-blue-200 active:scale-95 transition-all">Valider</button>
-                </div>`;
-            }).join('');
-            
-            fetchAllData(); // Premier chargement des données
-        }
-
-        // LANCEMENT DE L'APPLICATION
-        init();
     </script>
 </body>
 </html>

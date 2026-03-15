@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clean Team Elite | Pakito Dashboard</title>
+    <title>Clean Team Elite | Master Dashboard</title>
     <meta name="author" content="Honoré Mbieleu Pakito">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,80 +12,69 @@
         tailwind.config = { darkMode: 'class' }
     </script>
     <style>
-        /* Scrollbar pro pour PC */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-        
+        /* Optimisation pour l'affichage SANS scroll sur PC */
         @media (min-width: 1024px) {
-            body { overflow: hidden; height: 100vh; } /* Bloque le scroll de la page entière sur PC */
-            .pc-main-area { height: calc(100vh - 110px); } /* Zone sous le header et au dessus du footer */
-            .scroll-area { overflow-y: auto; height: 100%; }
+            body { overflow: hidden; height: 100vh; }
+            .main-container { height: calc(100vh - 80px); }
+            .mission-card { padding: 0.75rem !important; }
+            .mission-title { font-size: 1rem !important; }
         }
-
-        .transition-theme { transition: all 0.4s ease; }
+        .transition-theme { transition: all 0.3s ease; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-theme h-full flex flex-col" id="app-body">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-theme flex flex-col h-screen" id="app-body">
 
-    <header class="fixed top-0 left-0 right-0 bg-blue-700 text-white p-4 shadow-2xl z-50 flex justify-between items-center h-[70px]">
+    <header class="bg-blue-700 text-white px-6 py-3 shadow-2xl z-50 flex justify-between items-center shrink-0">
         <div class="flex flex-col">
-            <h1 id="admin-trigger" class="text-xl lg:text-3xl font-black italic tracking-tighter cursor-pointer">🚀 CLEAN TEAM ELITE</h1>
-            <p id="week-info" class="text-[10px] font-bold uppercase tracking-widest opacity-80 italic">Semaine --</p>
+            <h1 id="admin-trigger" class="text-xl lg:text-2xl font-black italic tracking-tighter cursor-pointer">🚀 CLEAN TEAM ELITE</h1>
+            <p id="week-info" class="text-[10px] font-bold uppercase tracking-widest opacity-80">Semaine --</p>
         </div>
-        <button onclick="toggleDarkMode()" class="text-2xl p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all active:scale-90">🌓</button>
+        <button onclick="toggleDarkMode()" class="text-xl p-2 bg-white/10 rounded-full hover:bg-white/20">🌓</button>
     </header>
 
-    <div class="h-[70px] shrink-0"></div>
-
-    <main class="max-w-[1700px] mx-auto w-full p-4 lg:p-6 pc-main-area grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto lg:overflow-hidden">
+    <main class="max-w-[1800px] mx-auto w-full p-3 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-grow overflow-y-auto lg:overflow-hidden main-container">
         
-        <div class="lg:col-span-7 flex flex-col h-full space-y-4">
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
-                <h2 class="font-black text-blue-600 dark:text-blue-400 mb-6 flex items-center text-xl lg:text-2xl uppercase italic shrink-0">
-                    <span class="mr-3">🧹</span> Missions Hebdomadaires
+        <div class="lg:col-span-7 flex flex-col h-full overflow-hidden">
+            <div class="bg-white dark:bg-slate-900 p-4 lg:p-5 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col h-full">
+                <h2 class="font-black text-blue-600 dark:text-blue-400 mb-3 flex items-center text-sm lg:text-lg uppercase italic">
+                    <span class="mr-2">🧹</span> Missions Hebdomadaires
                 </h2>
-                <div id="tasks-container" class="space-y-3 lg:space-y-4 scroll-area pr-2 pb-4">
+                <div id="tasks-container" class="space-y-2 overflow-y-auto lg:overflow-visible pr-1 flex-grow justify-between flex flex-col">
                     </div>
             </div>
         </div>
 
-        <div class="lg:col-span-5 flex flex-col h-full space-y-6">
+        <div class="lg:col-span-5 flex flex-col h-full gap-4 overflow-hidden">
             
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 shrink-0">
-                <h3 class="font-bold text-xs uppercase tracking-widest mb-4 flex items-center opacity-60">👑 Podium Actuel</h3>
-                <div id="leaderboard" class="divide-y divide-slate-100 dark:divide-slate-800 pr-2 max-h-[250px] overflow-y-auto">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800 shrink-0">
+                <h3 class="font-bold text-[10px] uppercase tracking-widest mb-2 opacity-60">👑 Podium</h3>
+                <div id="leaderboard" class="divide-y divide-slate-100 dark:divide-slate-800">
                     </div>
             </div>
 
-            <div class="scroll-area flex flex-col space-y-6 pr-2">
-                <div class="bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-md border border-slate-200 dark:border-slate-800 h-[220px] shrink-0">
-                    <canvas id="scoreChart"></canvas>
-                </div>
+            <div class="bg-white dark:bg-slate-900 p-3 rounded-[2rem] shadow-md border border-slate-200 dark:border-slate-800 flex-grow min-h-[150px]">
+                <canvas id="scoreChart"></canvas>
+            </div>
 
-                <div class="bg-slate-900 text-slate-300 p-6 rounded-[2.5rem] shadow-2xl shrink-0">
-                    <p class="text-[9px] font-black text-blue-400 uppercase mb-4 tracking-widest italic">Live Activity</p>
-                    <div id="history-logs" class="space-y-3 text-[10px] lg:text-[11px]">
-                        </div>
-                </div>
+            <div class="bg-slate-900 text-slate-300 p-4 rounded-[2rem] shadow-2xl h-[120px] lg:h-[150px] shrink-0">
+                <p class="text-[8px] font-black text-blue-400 uppercase mb-2 tracking-widest italic">Live Activity</p>
+                <div id="history-logs" class="space-y-1 overflow-y-auto h-full pb-4 text-[10px]">
+                    </div>
             </div>
         </div>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 py-2 z-50">
-        <div class="max-w-[1700px] mx-auto px-6 flex justify-between items-center text-slate-400 font-bold uppercase tracking-[0.2em] text-[8px] lg:text-[10px]">
-            <span>© 2026 Honoré Mbieleu Pakito</span>
-            <span class="hidden lg:inline text-blue-500 italic">Designed for Clean Coloc Elite</span>
-        </div>
+    <footer class="py-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-center border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <p class="text-slate-400 font-bold uppercase tracking-[0.2em] text-[8px]">© 2026 Honoré Mbieleu Pakito</p>
     </footer>
 
     <div id="admin-panel" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl">
-            <h3 class="text-red-600 font-black text-center mb-6">👑 PAKITO ADMIN MODE</h3>
-            <div id="admin-malus-list" class="space-y-2 mb-8 max-h-[300px] overflow-y-auto"></div>
-            <div class="flex gap-4">
-                <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="flex-1 bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold uppercase text-[10px]">Fermer</button>
-                <button onclick="resetAllScores()" class="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold uppercase text-[10px]">Reset Global</button>
-            </div>
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center border border-red-500">
+            <h3 class="text-red-600 font-black mb-6 uppercase">ADMIN MODE</h3>
+            <div id="admin-malus-list" class="space-y-2 mb-8 max-h-[200px] overflow-y-auto"></div>
+            <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Fermer</button>
         </div>
     </div>
 
@@ -93,7 +82,6 @@
         const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         const colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
         const missions = ["🚿 Douche Gauche", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine + Salon", "🚿 Douche Droite"];
         let myChart;
@@ -114,21 +102,21 @@
         async function fetchAllData() {
             const weekNum = getWeekNumber();
             const { data: users } = await _supabase.from('scores').select('*').order('points', { ascending: false });
-            const { data: logs } = await _supabase.from('logs').select('*').order('created_at', { descending: true }).limit(10);
+            const { data: logs } = await _supabase.from('logs').select('*').order('created_at', { descending: true }).limit(6);
 
             if (!users) return;
 
-            // Leaderboard
-            document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
-                <div class="flex justify-between items-center py-4">
-                    <span class="text-sm font-bold ${i==0?'text-blue-500':'opacity-80'}">${i==0?'🥇':i+1}. ${u.name}</span>
-                    <span class="font-black text-xl">${u.points} <small class="text-[9px] opacity-40">PTS</small></span>
+            // Podium
+            document.getElementById('leaderboard').innerHTML = users.slice(0, 5).map((u, i) => `
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-xs font-bold ${i==0?'text-blue-500':'opacity-80'}">${i+1}. ${u.name}</span>
+                    <span class="font-black text-sm">${u.points} <small class="text-[8px] opacity-40">PTS</small></span>
                 </div>`).join('');
 
             // Logs
             document.getElementById('history-logs').innerHTML = logs.map(l => `
-                <div class="flex justify-between border-b border-white/5 pb-1 opacity-70">
-                    <span>${l.name} (${l.type})</span>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span>${l.name}</span>
                     <span class="${l.points_gagnes>0?'text-green-400':'text-red-400'} font-bold">${l.points_gagnes>0?'+':''}${l.points_gagnes}</span>
                 </div>`).join('');
 
@@ -136,17 +124,10 @@
             users.forEach(u => {
                 const btn = document.querySelector(`button[data-name="${u.name}"]`);
                 if (btn && u.last_week_validated === weekNum) {
-                    btn.disabled = true; btn.innerHTML = "VALIDÉ";
-                    btn.className = "bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[10px] font-bold";
+                    btn.disabled = true; btn.innerHTML = "✅";
+                    btn.className = "bg-green-500/20 text-green-500 px-3 py-1 rounded-xl text-[9px] font-bold";
                 }
             });
-
-            // Admin List
-            document.getElementById('admin-malus-list').innerHTML = users.map(u => `
-                <div class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-xl mb-1 text-xs">
-                    <span class="font-bold">${u.name}</span>
-                    <button onclick="applyMalus('${u.id}', '${u.name}', ${u.points})" class="bg-orange-600 text-white px-3 py-1 rounded-lg">-2</button>
-                </div>`).join('');
 
             renderChart(users);
         }
@@ -159,14 +140,14 @@
                 type: 'bar',
                 data: {
                     labels: users.map(u => u.name),
-                    datasets: [{ data: users.map(u => u.points), backgroundColor: '#3b82f6', borderRadius: 8 }]
+                    datasets: [{ data: users.map(u => u.points), backgroundColor: '#3b82f6', borderRadius: 4 }]
                 },
                 options: { 
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: { 
-                        y: { beginAtZero: true, grid: { color: isDark ? '#1e293b':'#e2e8f0' }, ticks: { color: isDark?'#64748b':'#94a3b8', font:{size: 9} } },
-                        x: { grid: { display: false }, ticks: { color: isDark?'#64748b':'#94a3b8', font:{size: 9} } }
+                        y: { beginAtZero: true, grid: { color: isDark ? '#1e293b':'#f1f5f9' }, ticks: { color: isDark?'#64748b':'#94a3b8', font: {size: 8} } },
+                        x: { grid: { display: false }, ticks: { color: isDark?'#64748b':'#94a3b8', font: {size: 8} } }
                     }
                 }
             });
@@ -185,19 +166,6 @@
             } catch (e) { console.error(e); }
         }
 
-        async function applyMalus(id, nom, current) {
-            await _supabase.from('scores').update({ points: current - 2 }).eq('id', id);
-            await _supabase.from('logs').insert([{ name: nom, points_gagnes: -2, type: 'malus' }]);
-            fetchAllData();
-        }
-
-        async function resetAllScores() {
-            if (!confirm("🚨 Pakito, reset global du mois ?")) return;
-            await _supabase.from('scores').update({ points: 0, last_week_validated: 0 }).neq('id', 0);
-            await _supabase.from('logs').delete().neq('id', 0);
-            location.reload();
-        }
-
         let adminClicks = 0;
         document.getElementById('admin-trigger').onclick = () => { if(++adminClicks === 5) { document.getElementById('admin-panel').classList.remove('hidden'); adminClicks=0; }};
 
@@ -208,12 +176,12 @@
             document.getElementById('tasks-container').innerHTML = colocs.map((nom, i) => {
                 const mission = missions[(i + week) % missions.length];
                 return `
-                <div class="bg-slate-50 dark:bg-slate-800/40 p-5 lg:p-7 rounded-[2rem] border border-slate-200 dark:border-slate-700 flex justify-between items-center transition-all hover:shadow-lg">
-                    <div class="leading-tight">
-                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${nom}</p>
-                        <p class="font-bold text-base lg:text-2xl dark:text-white">${mission}</p>
+                <div class="bg-slate-50 dark:bg-slate-800/40 mission-card p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <p class="text-[7px] font-black text-blue-500 uppercase">${nom}</p>
+                        <p class="font-bold text-xs lg:text-base dark:text-white mission-title">${mission}</p>
                     </div>
-                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 text-white px-6 py-3 lg:px-10 lg:py-5 rounded-2xl font-black text-[10px] lg:text-sm shadow-xl active:scale-95 transition-all">VALIDER</button>
+                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 text-white px-3 py-1.5 lg:px-5 lg:py-2 rounded-xl font-black text-[9px] lg:text-xs">VALIDER</button>
                 </div>`;
             }).join('');
             fetchAllData();

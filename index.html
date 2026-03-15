@@ -3,85 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Nettoyage V2 | Pakito Edition</title>
+    <title>Clean Team Elite V2 | Pakito Edition</title>
     <meta name="author" content="Honoré Mbieleu Pakito">
     <meta name="copyright" content="© 2026 Honoré Mbieleu Pakito">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Configuration Tailwind pour le Dark Mode
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
     <style>
-        .dark { background-color: #0f172a; color: white; }
-        .dark .bg-white { background-color: #1e293b; color: white; border-color: #334155; }
-        .dark .text-slate-800 { color: #f1f5f9; }
-        .dark .text-slate-700 { color: #cbd5e1; }
+        /* Styles pour le mode PC fixe */
+        @media (min-width: 1024px) {
+            .pc-fixed-height {
+                height: calc(100vh - 120px); /* Ajuste selon la taille du header/footer */
+                overflow: hidden;
+            }
+            .scroll-custom {
+                overflow-y: auto;
+                max-height: 100%;
+            }
+        }
         
-        /* Scrollbar stylée pour les sections */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        /* Transition fluide pour le mode sombre */
+        .transition-theme { transition: background-color 0.4s, color 0.4s, border-color 0.4s; }
+        
+        /* Scrollbar élégante */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-100 font-sans transition-all min-h-screen flex flex-col" id="body">
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans transition-theme min-h-screen flex flex-col" id="app-body">
 
-    <header class="bg-blue-700 text-white p-5 shadow-lg rounded-b-[2.5rem] text-center relative shrink-0">
-        <button onclick="toggleDarkMode()" class="absolute right-6 top-6 text-xl p-2 bg-blue-600 rounded-full shadow-inner active:scale-90 transition-all">🌓</button>
-        <h1 id="admin-trigger" class="text-2xl font-black italic tracking-tighter cursor-pointer select-none relative z-10">NETTOYAGE APPART 48</h1>
-        <p id="week-info" class="text-blue-200 text-xs font-bold uppercase tracking-widest italic">Chargement...</p>
+    <header class="bg-blue-700 text-white p-4 lg:p-6 shadow-xl rounded-b-[2rem] text-center relative z-20 shrink-0">
+        <button onclick="toggleDarkMode()" class="absolute right-6 top-1/2 -translate-y-1/2 text-2xl p-2 bg-blue-600/50 rounded-full hover:bg-blue-500 transition-all active:scale-90">
+            <span id="dark-icon">🌓</span>
+        </button>
+        <h1 id="admin-trigger" class="text-xl lg:text-3xl font-black italic tracking-tighter cursor-pointer select-none">🚀 CLEAN TEAM ELITE</h1>
+        <p id="week-info" class="text-blue-200 text-[10px] lg:text-xs font-bold uppercase tracking-[0.3em]">Semaine --</p>
     </header>
 
-    <main class="max-w-[1400px] mx-auto w-full p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
+    <main class="flex-grow w-full max-w-[1500px] mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 pc-fixed-height">
         
-        <div class="lg:col-span-7 flex flex-col gap-6">
-            <div class="bg-white dark:bg-slate-800/50 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-700">
-                <h2 class="font-black text-blue-600 dark:text-blue-400 mb-6 flex items-center text-xl uppercase tracking-tighter">
-                    <span class="mr-3 text-2xl">🧹</span> MISSIONS DE LA SEMAINE
+        <div class="lg:col-span-7 flex flex-col gap-4 h-full">
+            <div class="bg-white dark:bg-slate-900 p-5 lg:p-8 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+                <h2 class="font-black text-blue-600 dark:text-blue-400 mb-4 lg:mb-6 flex items-center text-lg lg:text-2xl uppercase italic">
+                    <span class="mr-3">🧹</span> Missions Hebdo
                 </h2>
-                <div id="tasks-container" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                    </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-md border border-slate-200">
-                <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-center">Statistiques de performance</h3>
-                <div class="h-[200px]">
-                    <canvas id="scoreChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="lg:col-span-5 flex flex-col gap-6">
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-200 flex flex-col">
-                <h2 class="font-black text-slate-800 dark:text-slate-200 mb-6 flex items-center text-lg uppercase tracking-tight">
-                    <span class="mr-3">👑</span> CLASSEMENT GÉNÉRAL
-                </h2>
-                <div id="leaderboard" class="divide-y divide-slate-100 dark:divide-slate-700 overflow-y-auto max-h-[400px] pr-2">
-                    </div>
-            </div>
-
-            <div class="bg-slate-800 text-slate-300 p-6 rounded-[2.5rem] shadow-2xl flex flex-col flex-grow">
-                <h3 class="text-[10px] font-bold text-blue-400 uppercase mb-4 tracking-widest">ACTIVITÉ RÉCENTE EN DIRECT</h3>
-                <div id="history-logs" class="space-y-3 overflow-y-auto max-h-[300px] text-[11px] pr-2">
+                <div id="tasks-container" class="space-y-3 lg:space-y-4 scroll-custom pr-2">
                     </div>
             </div>
         </div>
 
+        <div class="lg:col-span-5 flex flex-col gap-6 h-full">
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-[2rem] shadow-md border border-slate-200 dark:border-slate-800 h-[200px] lg:h-[220px] shrink-0">
+                <canvas id="scoreChart"></canvas>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-[2rem] shadow-xl border border-slate-200 dark:border-slate-800 flex-grow overflow-hidden flex flex-col">
+                <h3 class="font-bold text-sm uppercase tracking-widest mb-4 flex items-center">👑 Podium</h3>
+                <div id="leaderboard" class="divide-y divide-slate-100 dark:divide-slate-800 scroll-custom pr-2">
+                    </div>
+            </div>
+
+            <div class="bg-slate-900 text-slate-300 p-5 rounded-[2rem] h-[150px] lg:h-[180px] shrink-0 flex flex-col shadow-2xl">
+                <p class="text-[9px] font-black text-blue-400 uppercase mb-2 tracking-widest italic">Live Activity</p>
+                <div id="history-logs" class="scroll-custom space-y-2 text-[10px]">
+                    </div>
+            </div>
+        </div>
     </main>
 
-    <div id="admin-panel" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl relative">
-            <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="absolute top-6 right-6 text-2xl">✕</button>
-            <h3 class="text-red-600 font-black text-center mb-6 uppercase">ADMINISTRATION PAKITO</h3>
-            <div id="admin-malus-list" class="space-y-3 mb-8 max-h-[300px] overflow-y-auto pr-2"></div>
-            <button onclick="resetAllScores()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-black uppercase hover:bg-red-700 transition-colors">Réinitialiser le mois</button>
+    <footer class="p-4 text-center opacity-50 shrink-0">
+        <p class="text-[9px] font-bold tracking-widest uppercase">© 2026 Honoré Mbieleu Pakito</p>
+    </footer>
+
+    <div id="admin-panel" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center">
+            <h3 class="text-red-600 font-black mb-6 uppercase">PAKITO ADMIN MODE</h3>
+            <div id="admin-malus-list" class="space-y-2 mb-8 max-h-[300px] overflow-y-auto"></div>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold">Fermer</button>
+                <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold">RESET</button>
+            </div>
         </div>
     </div>
-
-    <footer class="p-6 text-center border-t border-slate-200 dark:border-slate-800 mt-auto">
-        <p class="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">
-            © 2026 Honoré Mbieleu Pakito | Tous droits réservés
-        </p>
-    </footer>
 
     <script>
         const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
@@ -92,15 +104,28 @@
         const missions = ["🚿 Douche Gauche", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine + Salon", "🚿 Douche Droite"];
         let myChart;
 
+        // GESTION DU MODE SOMBRE
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const body = document.getElementById('app-body');
+            const icon = document.getElementById('dark-icon');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                icon.innerText = "🌞";
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                icon.innerText = "🌙";
+            }
+            if(myChart) updateChartColors();
+        }
+
         function getWeekNumber() {
             const now = new Date();
             const start = new Date(now.getFullYear(), 0, 1);
             return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
-        }
-
-        function toggleDarkMode() {
-            document.getElementById('body').classList.toggle('dark');
-            localStorage.setItem('theme', document.getElementById('body').classList.contains('dark') ? 'dark' : 'light');
         }
 
         async function fetchAllData() {
@@ -110,116 +135,107 @@
 
             if (!users) return;
 
-            // 1. Leaderboard
+            // Podium
             document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
-                <div class="flex justify-between items-center py-5">
-                    <div class="flex items-center">
-                        <span class="w-8 text-lg font-black ${i==0?'text-yellow-500':'text-slate-300'}">${i==0?'🥇':i+1}</span>
-                        <span class="font-bold text-xl dark:text-white">${u.name}</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-black text-2xl text-blue-600 dark:text-blue-400">${u.points}</span>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase italic">pts</span>
-                    </div>
+                <div class="flex justify-between items-center py-3">
+                    <span class="font-bold ${i==0?'text-blue-500':'opacity-80'}">${i==0?'🥇':i+1}. ${u.name}</span>
+                    <span class="font-black text-lg">${u.points} <small class="text-[9px] opacity-50">PTS</small></span>
                 </div>`).join('');
 
-            // 2. Logs
+            // Logs
             document.getElementById('history-logs').innerHTML = logs.map(l => `
-                <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <span><b class="text-white">${l.name}</b> <span class="opacity-50 text-[9px] uppercase">${l.type}</span></span>
-                    <span class="${l.points_gagnes>0?'text-green-400':'text-red-400'} font-black">${l.points_gagnes>0?'+':''}${l.points_gagnes} pts</span>
+                <div class="flex justify-between border-b border-white/5 pb-1">
+                    <span>${l.name}</span>
+                    <span class="${l.points_gagnes>0?'text-green-400':'text-red-400'} font-bold">${l.points_gagnes>0?'+':''}${l.points_gagnes}</span>
                 </div>`).join('');
 
-            // 3. Update Buttons
+            // Validation État
             users.forEach(u => {
                 const btn = document.querySelector(`button[data-name="${u.name}"]`);
                 if (btn && u.last_week_validated === weekNum) {
-                    btn.disabled = true; btn.innerHTML = "VALIDÉ ✅";
-                    btn.className = "bg-green-100 text-green-600 px-6 py-3 rounded-2xl text-xs font-black opacity-60";
+                    btn.disabled = true; btn.innerHTML = "✅";
+                    btn.className = "bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[10px] font-bold";
                 }
             });
 
-            // 4. Admin
+            // Admin Malus
             document.getElementById('admin-malus-list').innerHTML = users.map(u => `
-                <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                    <span class="font-bold">${u.name} (${u.points} pts)</span>
-                    <button onclick="applyMalus('${u.id}', '${u.name}', ${u.points})" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-[10px] font-black">-2 PTS</button>
+                <div class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-3 rounded-xl mb-1">
+                    <span class="text-xs font-bold">${u.name}</span>
+                    <button onclick="applyMalus('${u.id}', '${u.name}', ${u.points})" class="bg-orange-600 text-white px-3 py-1 rounded-lg text-[10px]">-2</button>
                 </div>`).join('');
 
-            updateChart(users);
+            renderChart(users);
         }
 
-        async function addPoints(nom, btn) {
-            const weekNum = getWeekNumber();
-            btn.innerHTML = "⏳";
-            try {
-                let { data: all } = await _supabase.from('scores').select('*');
-                const user = all.find(u => u.name === nom);
-                if (user.last_week_validated === weekNum) return;
-
-                const count = all.filter(u => u.last_week_validated === weekNum).length;
-                let pts = Math.max(1, 5 - count);
-
-                await _supabase.from('scores').update({ points: user.points + pts, last_week_validated: weekNum }).eq('id', user.id);
-                await _supabase.from('logs').insert([{ name: nom, points_gagnes: pts, type: 'validation' }]);
-                
-                alert(`Félicitations ${nom} ! +${pts} pts.`);
-                fetchAllData();
-            } catch (e) { alert(e.message); btn.innerHTML = "Valider"; }
-        }
-
-        async function applyMalus(id, nom, current) {
-            if(!confirm(`Malus -2 pour ${nom} ?`)) return;
-            await _supabase.from('scores').update({ points: current - 2 }).eq('id', id);
-            await _supabase.from('logs').insert([{ name: nom, points_gagnes: -2, type: 'malus' }]);
-            fetchAllData();
-        }
-
-        function updateChart(users) {
+        function renderChart(users) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            const isDark = document.getElementById('body').classList.contains('dark');
+            const isDark = document.documentElement.classList.contains('dark');
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: users.map(u => u.name),
-                    datasets: [{ data: users.map(u => u.points), backgroundColor: '#2563eb', borderRadius: 10, barThickness: 25 }]
+                    datasets: [{ data: users.map(u => u.points), backgroundColor: '#3b82f6', borderRadius: 5 }]
                 },
                 options: { 
                     maintainAspectRatio: false,
-                    responsive: true,
                     plugins: { legend: { display: false } },
                     scales: { 
-                        y: { beginAtZero: true, grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } }
+                        y: { beginAtZero: true, grid: { color: isDark ? '#334155':'#e2e8f0' }, ticks: { color: isDark?'#94a3b8':'#64748b', font: {size: 10} } },
+                        x: { grid: { display: false }, ticks: { color: isDark?'#94a3b8':'#64748b', font: {size: 10} } }
                     }
                 }
             });
         }
 
+        async function addPoints(nom, btn) {
+            const weekNum = getWeekNumber();
+            try {
+                let { data: all } = await _supabase.from('scores').select('*');
+                const user = all.find(u => u.name === nom);
+                if (user.last_week_validated === weekNum) return;
+                const pts = Math.max(1, 5 - all.filter(u => u.last_week_validated === weekNum).length);
+                await _supabase.from('scores').update({ points: user.points + pts, last_week_validated: weekNum }).eq('id', user.id);
+                await _supabase.from('logs').insert([{ name: nom, points_gagnes: pts, type: 'validation' }]);
+                fetchAllData();
+            } catch (e) { alert("Erreur"); }
+        }
+
+        async function applyMalus(id, nom, current) {
+            await _supabase.from('scores').update({ points: current - 2 }).eq('id', id);
+            await _supabase.from('logs').insert([{ name: nom, points_gagnes: -2, type: 'malus' }]);
+            fetchAllData();
+        }
+
         async function resetAllScores() {
-            if (!confirm("🚨 RESET TOTAL DU MOIS ?")) return;
+            if (!confirm("Reset total ?")) return;
             await _supabase.from('scores').update({ points: 0, last_week_validated: 0 }).neq('id', 0);
             await _supabase.from('logs').delete().neq('id', 0);
             location.reload();
         }
 
-        let clicks = 0;
-        document.getElementById('admin-trigger').onclick = () => { if(++clicks === 5) { document.getElementById('admin-panel').classList.remove('hidden'); clicks=0; }};
+        let adminClicks = 0;
+        document.getElementById('admin-trigger').onclick = () => { if(++adminClicks === 5) { document.getElementById('admin-panel').classList.remove('hidden'); adminClicks=0; }};
 
         function init() {
-            if (localStorage.getItem('theme') === 'dark') document.getElementById('body').classList.add('dark');
+            // Appliquer thème sauvegardé
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-icon').innerText = "🌙";
+            }
+            
             const week = getWeekNumber();
             document.getElementById('week-info').innerText = "Semaine n°" + week;
             document.getElementById('tasks-container').innerHTML = colocs.map((nom, i) => {
                 const mission = missions[(i + week) % missions.length];
                 return `
-                <div class="bg-white dark:bg-slate-700 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-600 flex justify-between items-center group hover:shadow-lg transition-all">
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 lg:p-6 rounded-[1.5rem] lg:rounded-[2rem] border border-slate-200 dark:border-slate-700 flex justify-between items-center hover:scale-[1.01] transition-transform">
                     <div class="flex-grow">
-                        <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">${nom}</p>
-                        <p class="font-black text-slate-800 dark:text-white text-lg lg:text-xl">${mission}</p>
+                        <p class="text-[8px] lg:text-[10px] font-black text-blue-500 uppercase mb-1">${nom}</p>
+                        <p class="font-bold text-sm lg:text-xl dark:text-white">${mission}</p>
                     </div>
-                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[1.5rem] font-black text-xs shadow-xl active:scale-95 transition-all">VALIDER</button>
+                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 text-white px-5 py-3 lg:px-8 lg:py-4 rounded-xl lg:rounded-2xl font-black text-[10px] lg:text-xs shadow-lg active:scale-95 transition-all">VALIDER</button>
                 </div>`;
             }).join('');
             fetchAllData();

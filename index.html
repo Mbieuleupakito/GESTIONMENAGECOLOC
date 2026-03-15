@@ -9,7 +9,7 @@
     <meta name="copyright" content="© 2026 Honoré Mbieleu Pakito">
 
     <script src="https://cdn.tailwindcss.com"></script> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
-        /* CONFIGURATION DU MODE SOMBRE */
+        /* MODE SOMBRE CUSTOM */
         .dark { background-color: #0f172a; color: white; }
         .dark .bg-white { background-color: #1e293b; color: white; border-color: #334155; }
         .dark .text-slate-800 { color: #f1f5f9; }
@@ -22,14 +22,14 @@
 
     <header class="bg-blue-700 text-white p-6 shadow-lg mb-6 rounded-b-[2.5rem] text-center relative overflow-hidden">
         <button onclick="toggleDarkMode()" class="absolute right-6 top-6 text-xl p-2 bg-blue-600 rounded-full shadow-inner active:scale-90 transition-all">🌓</button>
-        <h1 id="admin-trigger" class="text-2xl font-black italic tracking-tighter cursor-pointer select-none relative z-10">🚀 NETTOYAGE APPART 48</h1>
-        <p id="week-info" class="text-blue-200 text-xs mt-1 font-bold uppercase tracking-widest italic relative z-10">Chargement...</p>
+        <h1 id="admin-trigger" class="text-2xl font-black italic tracking-tighter cursor-pointer select-none relative z-10">🚀 CLEAN TEAM ELITE</h1>
+        <p id="week-info" class="text-blue-200 text-xs mt-1 font-bold uppercase tracking-widest italic relative z-10">Chargement de la semaine...</p>
     </header>
 
     <main class="max-w-md mx-auto px-4 min-h-screen">
         
         <div class="bg-white p-5 rounded-3xl shadow-md mb-6 border border-slate-200">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Performances Live</h3>
+            <h3 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-center italic">Performances du mois</h3>
             <canvas id="scoreChart" height="160"></canvas>
         </div>
 
@@ -37,23 +37,23 @@
             <p class="text-orange-700 font-bold text-sm flex items-center">
                 <span class="mr-2">⚠️</span> COURSE CONTRE LA MONTRE
             </p>
-            <p class="text-orange-600 text-[10px] italic">Validez vite pour maximiser vos points !</p>
+            <p class="text-orange-600 text-[10px] italic font-bold">Le barème baisse ! Validez avant lundi.</p>
         </div>
 
         <div id="tasks-container" class="space-y-3"></div>
 
         <h2 class="font-bold text-slate-800 mt-10 mb-4 flex items-center text-sm uppercase tracking-wide">
-            <span class="mr-2">🏆</span> Classement & Activité
+            <span class="mr-2">🏆</span> Podium des Colocs
         </h2>
         <div id="leaderboard" class="bg-white rounded-3xl p-4 shadow-md border border-slate-200 divide-y divide-slate-50"></div>
 
-        <div class="mt-8 p-4 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-tighter">Flux d'activité récent</h3>
-            <div id="history-logs" class="text-[10px] space-y-2"></div>
+        <div class="mt-8 p-5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-tighter">Flux d'activité récent</h3>
+            <div id="history-logs" class="space-y-3"></div>
         </div>
 
         <div id="admin-panel" class="hidden mt-10 p-6 bg-red-900/10 rounded-[2.5rem] border-2 border-dashed border-red-300">
-            <h3 class="text-red-700 font-black text-xs mb-4 text-center uppercase tracking-widest">👑 CONTRÔLE GÉRANT</h3>
+            <h3 class="text-red-700 font-black text-xs mb-4 text-center uppercase tracking-widest">👑 PAKITO ADMIN MODE</h3>
             <div id="admin-malus-list" class="space-y-2 mb-6 text-slate-800"></div>
             <button onclick="resetAllScores()" class="w-full bg-red-600 text-white py-4 rounded-2xl text-xs font-black uppercase shadow-xl active:scale-95 transition-all">
                 🚨 Réinitialiser le mois
@@ -64,24 +64,44 @@
             <p class="text-slate-400 text-[10px] font-medium tracking-widest uppercase">
                 © 2026 Honoré Mbieleu Pakito
             </p>
-            <p class="text-slate-300 text-[9px] mt-1">
-                Tous droits réservés. Design & Code par Pakito.
+            <p class="text-slate-300 text-[9px] mt-1 italic">
+                Tous droits réservés. Designed for Clean Coloc.
             </p>
         </footer>
     </main>
 
     <script>
-        /* --- FONCTION : CHARGER TOUTES LES DONNÉES --- */
+        /* --- CONFIGURATION --- */
+        const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM'; 
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
+        const missions = ["🚿 Douche G.", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine", "🚿 Douche D."];
+        let myChart;
+
+        /* --- LOGIQUE SEMAINE --- */
+        function getWeekNumber() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 1);
+            return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
+        }
+
+        /* --- THEME --- */
+        function toggleDarkMode() {
+            document.getElementById('body').classList.toggle('dark');
+            localStorage.setItem('theme', document.getElementById('body').classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        /* --- RÉCUPÉRATION DES DONNÉES ET AFFICHAGE --- */
         async function fetchAllData() {
             const weekNum = getWeekNumber();
-            
-            // On récupère les scores et les logs
             const { data: users, error: uErr } = await _supabase.from('scores').select('*').order('points', { ascending: false });
             const { data: logs, error: lErr } = await _supabase.from('logs').select('*').order('created_at', { descending: true }).limit(8);
 
             if (uErr || lErr) return;
 
-            // 1. MISE À JOUR DU CLASSEMENT (Affichage clair des points cumulés)
+            // 1. Leaderboard (Classement avec gros points)
             document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
                 <div class="flex justify-between items-center py-4">
                     <div class="flex items-center">
@@ -90,39 +110,36 @@
                     </div>
                     <div class="text-right">
                         <span class="font-black text-xl text-slate-800 dark:text-white">${u.points}</span>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase ml-1">pts</span>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase ml-1">pts</span>
                     </div>
                 </div>`).join('');
 
-            // 2. MISE À JOUR DE L'HISTORIQUE (Détail des points gagnés/perdus)
+            // 2. Historique détaillé avec visages des points (+5 pts)
             document.getElementById('history-logs').innerHTML = logs.map(l => {
-                const isMalus = l.type === 'malus';
-                const colorClass = isMalus ? 'text-red-500' : 'text-green-500';
-                const prefix = l.points_gagnes > 0 ? '+' : '';
+                const color = l.points_gagnes > 0 ? 'text-green-500' : 'text-red-500';
+                const sign = l.points_gagnes > 0 ? '+' : '';
                 return `
-                <div class="flex justify-between items-center border-b border-slate-300/20 pb-2 mb-1">
+                <div class="flex justify-between items-center border-b border-slate-300/20 pb-2">
                     <div class="flex flex-col">
-                        <span class="font-bold text-slate-700 dark:text-slate-200">${l.name}</span>
-                        <span class="opacity-50 text-[9px] uppercase">${l.type}</span>
+                        <span class="font-bold text-[11px] text-slate-700 dark:text-slate-200">${l.name}</span>
+                        <span class="opacity-50 text-[8px] uppercase font-bold">${l.type}</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-black ${colorClass}">${prefix}${l.points_gagnes} pts</span>
+                    <div class="flex items-center gap-4">
+                        <span class="font-black text-xs ${color}">${sign}${l.points_gagnes} pts</span>
                         <span class="opacity-40 text-[9px]">${new Date(l.created_at).toLocaleTimeString([], {hour: '2h', minute:'2h'})}</span>
                     </div>
                 </div>`;
             }).join('');
 
-            // Gestion des boutons de validation
+            // 3. Boutons et Malus
             users.forEach(u => {
                 const btn = document.querySelector(`button[data-name="${u.name}"]`);
                 if (btn && u.last_week_validated === weekNum) {
-                    btn.disabled = true;
-                    btn.innerHTML = "✅ Validé";
+                    btn.disabled = true; btn.innerHTML = "✅ Fait";
                     btn.className = "bg-green-100 text-green-600 px-5 py-2 rounded-xl text-xs font-bold opacity-80";
                 }
             });
 
-            // Liste des malus dans le panneau Admin
             document.getElementById('admin-malus-list').innerHTML = users.map(u => `
                 <div class="flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm mb-2">
                     <span class="text-xs font-bold">${u.name} (${u.points} pts)</span>
@@ -131,6 +148,103 @@
 
             updateChart(users);
         }
+
+        /* --- LOGIQUE DE VALIDATION (5, 4, 3, 2, 1 pts) --- */
+        async function addPoints(nom, btn) {
+            const weekNum = getWeekNumber();
+            btn.disabled = true; btn.innerHTML = "⏳";
+            try {
+                let { data: all } = await _supabase.from('scores').select('*');
+                const user = all.find(u => u.name === nom);
+                if (user.last_week_validated === weekNum) throw new Error("Semaine déjà validée !");
+
+                const alreadyDone = all.filter(u => u.last_week_validated === weekNum).length;
+                let pts = Math.max(1, 5 - alreadyDone); // Barème dégressif
+
+                await _supabase.from('scores').update({ points: user.points + pts, last_week_validated: weekNum }).eq('id', user.id);
+                await _supabase.from('logs').insert([{ name: nom, points_gagnes: pts, type: 'validation' }]);
+                
+                alert(`Bravo ${nom} ! Tu gagnes ${pts} points.`);
+                fetchAllData();
+            } catch (e) { alert(e.message); fetchAllData(); }
+        }
+
+        /* --- LOGIQUE MALUS --- */
+        async function applyMalus(id, nom, currentPoints) {
+            if(!confirm(`Confirmer Malus -2 pts pour ${nom} ?`)) return;
+            await _supabase.from('scores').update({ points: currentPoints - 2 }).eq('id', id);
+            await _supabase.from('logs').insert([{ name: nom, points_gagnes: -2, type: 'malus' }]);
+            fetchAllData();
+        }
+
+        /* --- DESSIN DU GRAPHIQUE --- */
+        function updateChart(users) {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            const isDark = document.getElementById('body').classList.contains('dark');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: users.map(u => u.name),
+                    datasets: [{ 
+                        data: users.map(u => u.points), 
+                        backgroundColor: '#3b82f6', 
+                        borderRadius: 8,
+                        barThickness: 20
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        /* --- RESET ADMIN --- */
+        async function resetAllScores() {
+            if (!confirm("🚨 Pakito, confirmes-tu le RESET TOTAL du mois ?")) return;
+            await _supabase.from('scores').update({ points: 0, last_week_validated: 0 }).neq('id', 0);
+            await _supabase.from('logs').delete().neq('id', 0);
+            location.reload();
+        }
+
+        /* --- SÉCURITÉ ADMIN (5 CLICS) --- */
+        let adminClicks = 0;
+        document.getElementById('admin-trigger').onclick = () => {
+            if(++adminClicks === 5) {
+                document.getElementById('admin-panel').classList.toggle('hidden');
+                alert("👑 Pakito Admin Mode Activé");
+                adminClicks = 0;
+            }
+        };
+
+        /* --- INITIALISATION --- */
+        function init() {
+            if (localStorage.getItem('theme') === 'dark') document.getElementById('body').classList.add('dark');
+            const week = getWeekNumber();
+            const day = new Date().getDay();
+            if (day === 0 || day === 6) document.getElementById('weekend-alert').classList.remove('hidden');
+            
+            document.getElementById('week-info').innerText = "Semaine n°" + week;
+            document.getElementById('tasks-container').innerHTML = colocs.map((nom, i) => {
+                const mission = missions[(i + week) % missions.length];
+                return `
+                <div class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-200 flex justify-between items-center transition-all hover:shadow-md">
+                    <div>
+                        <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${nom}</p>
+                        <p class="font-bold text-slate-800 text-sm">${mission}</p>
+                    </div>
+                    <button data-name="${nom}" onclick="addPoints('${nom}', this)" class="bg-blue-600 text-white px-6 py-2 rounded-2xl text-xs font-black shadow-lg shadow-blue-200 active:scale-95 transition-all">Valider</button>
+                </div>`;
+            }).join('');
+            fetchAllData();
+        }
+
+        init();
     </script>
 </body>
 </html>

@@ -404,14 +404,21 @@
         }
 
         /* ── NUMÉRO DE SEMAINE ──────────────────────────────────────
-           Calcule le numéro de semaine ISO de l'année en cours.
-           Change chaque lundi à 00h00 → remet les boutons à zéro
-           et change les missions automatiquement.
+           Calcule le numéro de semaine basé sur le LUNDI.
+           Chaque lundi à 00h00 → nouvelle semaine → nouvelles missions.
+           Dimanche 15 mars ≠ lundi 16 mars (semaines différentes).
         ──────────────────────────────────────────────────────────── */
         function getWeekNumber() {
-            const now   = new Date();
-            const start = new Date(now.getFullYear(), 0, 1);
-            return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
+            const now = new Date();
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            // Trouve le lundi de la semaine courante
+            const day = now.getDay();
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+            monday.setHours(0, 0, 0, 0);
+            // Nombre de semaines depuis le 1er janvier
+            const days = Math.floor((monday - startOfYear) / 86400000);
+            return Math.floor(days / 7) + 1;
         }
 
         /* ── MISSION D'UN COLOCATAIRE POUR UNE SEMAINE DONNÉE ───────

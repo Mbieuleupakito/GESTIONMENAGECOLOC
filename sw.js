@@ -1,122 +1,114 @@
 /* ================================================================
-   SERVICE WORKER — Gestion Coloc (Appart 48)
+   SERVICE WORKER — Gestion Appart 48
    ================================================================
-   CE FICHIER EST LE CERVEAU DES ALERTES AUTOMATIQUES.
-   Il tourne EN ARRIÈRE-PLAN sur l'appareil de chaque colocataire
-   qui a accepté les notifications.
-
    CE QU'IL FAIT :
-   ┌─────────────────────────────────────────────────────────────┐
-   │ Chaque dimanche :                                           │
-   │  • 15h00 → Notification rappel (1er avertissement)         │
-   │  • 20h00 → Notification rappel (2ème avertissement)        │
-   │  • 23h30 → Notification dernière chance avant malus        │
-   │  • 23h59 → Malus -2pts automatique dans Supabase           │
-   │            + enregistre la semaine comme "tâche en retard" │
-   └─────────────────────────────────────────────────────────────┘
-
-   IMPORTANT : Ce fichier doit être à la RACINE du site Vercel
-   (même niveau que index.html), sinon les notifications
-   ne fonctionneront pas.
+   • Dimanche 15h, 20h, 23h30 → notification d'alerte avec son
+   • Dimanche 23h59 → malus automatique -2pts dans Supabase
+   • À chaque validation → notification "X a validé sa tâche ✅"
 ================================================================ */
 
-const CACHE_NAME = 'gestion-coloc-v1';
-
-/* Identifiants Supabase pour accéder à la base de données
-   directement depuis le Service Worker (sans l'app ouverte) */
+const CACHE_NAME = 'gestion-appart-48-v4';
 const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
+const HEADERS = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json'
+};
 
-/* ── CYCLE DE VIE DU SERVICE WORKER ─────────────────────────────
-   install  : s'active immédiatement sans attendre la fermeture
-              des onglets existants
-   activate : prend le contrôle de toutes les pages ouvertes     */
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
+/* ── CYCLE DE VIE ──────────────────────────────────────────────── */
+self.addEventListener('install', function() { self.skipWaiting(); });
+self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
 
-/* ── RÉCEPTION DE MESSAGE DEPUIS L'APP ──────────────────────────
-   L'app envoie 'SCHEDULE_CHECKS' au démarrage pour lancer
-   la boucle de vérification toutes les minutes               */
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SCHEDULE_CHECKS') {
+/* ── MESSAGES DEPUIS L'APP ─────────────────────────────────────── */
+self.addEventListener('message', function(event) {
+    if (!event.data) return;
+
+    /* Démarre la boucle de vérification dimanche */
+    if (event.data.type === 'SCHEDULE_CHECKS') {
         startCheckLoop();
+    }
+
+    /* Notification de validation envoyée par l'app */
+    if (event.data.type === 'VALIDATION_NOTIF') {
+        sendValidationNotif(event.data.nom, event.data.mission);
+    }
+
+    /* Test admin : déclenche une alarme immédiate */
+    if (event.data.type === 'TEST_ALARM') {
+        sendAlarmNotif('🚨 TEST ALARME — Admin', 'Ceci est un test de l\'alarme du dimanche.', 'test');
+    }
+
+    /* Test admin : simule une notification de validation */
+    if (event.data.type === 'TEST_VALIDATION') {
+        sendValidationNotif(event.data.nom || 'PAKITO', event.data.mission || '🧹 Cuisine + Salon');
     }
 });
 
-/* ── BOUCLE PRINCIPALE ───────────────────────────────────────────
-   Vérifie chaque minute si on est dimanche et si une action
-   (alerte ou malus) doit être déclenchée                      */
+/* ── BOUCLE VÉRIFICATION DIMANCHE ──────────────────────────────── */
 function startCheckLoop() {
-    /* Première vérif immédiate au démarrage */
     checkAndAct();
-    /* Puis toutes les 60 secondes */
     setInterval(checkAndAct, 60 * 1000);
 }
 
-async function checkAndAct() {
-    const now    = new Date();
-    const day    = now.getDay();    // 0=dimanche, 1=lundi ... 6=samedi
-    const hour   = now.getHours();
-    const minute = now.getMinutes();
+function checkAndAct() {
+    var now    = new Date();
+    var day    = now.getDay();    // 0 = dimanche
+    var hour   = now.getHours();
+    var minute = now.getMinutes();
 
-    /* On n'agit QUE le dimanche */
     if (day !== 0) return;
 
-    /* Détection des créneaux horaires */
-    const isAlert1    = hour === 15 && minute === 0;   // 15h00
-    const isAlert2    = hour === 20 && minute === 0;   // 20h00
-    const isAlert3    = hour === 23 && minute === 30;  // 23h30
-    const isMalusTime = hour === 23 && minute === 59;  // 23h59
+    var isAlert1    = hour === 15 && minute === 0;
+    var isAlert2    = hour === 20 && minute === 0;
+    var isAlert3    = hour === 23 && minute === 30;
+    var isMalusTime = hour === 23 && minute === 59;
 
-    if (isAlert1 || isAlert2 || isAlert3) {
-        await handleAlert(isAlert1, isAlert2, isAlert3, now);
-    }
-
-    if (isMalusTime) {
-        await handleAutoMalus(now);
-    }
+    if (isAlert1 || isAlert2 || isAlert3) handleAlert(isAlert1, isAlert2, isAlert3, now);
+    if (isMalusTime) handleAutoMalus(now);
 }
 
-/* ── ENVOI DES NOTIFICATIONS D'ALERTE ───────────────────────────
-   Envoie une notification push aux colocataires qui n'ont pas
-   encore validé leur mission pour la semaine en cours.
+/* ── ALERTES DIMANCHE AVEC SON D'ALARME ────────────────────────── */
+function handleAlert(isAlert1, isAlert2, isAlert3, now) {
+    var alertKey = 'alert_' + now.toISOString().slice(0, 15);
 
-   Un système de cache empêche d'envoyer la même alerte
-   deux fois dans la même minute.                              */
-async function handleAlert(isAlert1, isAlert2, isAlert3, now) {
-    /* Clé unique pour cette alerte (ex: "alert_2026-03-15T15:0") */
-    const alertKey = `alert_${now.toISOString().slice(0, 15)}`;
-    const cache    = await caches.open(CACHE_NAME);
+    caches.open(CACHE_NAME).then(function(cache) {
+        cache.match(alertKey).then(function(already) {
+            if (already) return;
+            cache.put(alertKey, new Response('sent'));
 
-    /* Si déjà envoyée → on sort */
-    if (await cache.match(alertKey)) return;
-    await cache.put(alertKey, new Response('sent'));
+            getUnvalidatedColocs().then(function(unvalidated) {
+                if (unvalidated.length === 0) return;
 
-    /* Récupère la liste des non-validés */
-    const unvalidated = await getUnvalidatedColocs();
-    if (unvalidated.length === 0) return; // Tout le monde a validé, rien à faire
+                var title, body;
+                if (isAlert1) {
+                    title = '⚠️ Rappel 15h — Mission non faite !';
+                    body  = unvalidated.join(', ') + ' n\'ont pas encore validé leur mission !';
+                } else if (isAlert2) {
+                    title = '🔔 Rappel 20h — Plus que quelques heures !';
+                    body  = unvalidated.join(', ') + ' — Validez avant ce soir.';
+                } else {
+                    title = '🚨 23h30 — DERNIÈRE CHANCE avant malus !';
+                    body  = unvalidated.join(', ') + ' — Validez avant minuit ou perdez 2 points !';
+                }
 
-    /* Message adapté selon l'heure */
-    let title, body;
-    if (isAlert1) {
-        title = "⚠️ Rappel 15h — Mission non faite !";
-        body  = `${unvalidated.join(', ')} ${unvalidated.length > 1 ? "n'ont" : "n'a"} pas encore validé leur mission !`;
-    } else if (isAlert2) {
-        title = "🔔 Rappel 20h — Plus que quelques heures !";
-        body  = `${unvalidated.join(', ')} — Validez votre tâche avant ce soir.`;
-    } else {
-        title = "🚨 23h30 — DERNIÈRE CHANCE avant malus !";
-        body  = `⏰ ${unvalidated.join(', ')} — Validez avant minuit ou perdez 2 points !`;
-    }
+                sendAlarmNotif(title, body, alertKey);
+            });
+        });
+    });
+}
 
-    /* Affiche la notification sur l'écran */
+/* ── ENVOI NOTIFICATION ALARME (son d'alarme) ──────────────────── */
+function sendAlarmNotif(title, body, tag) {
     self.registration.showNotification(title, {
-        body,
+        body            : body,
         icon            : '/icon-192.png',
         badge           : '/icon-192.png',
-        vibrate         : [200, 100, 200],
-        tag             : alertKey,       // évite les doublons visuels
-        requireInteraction: true,         // reste visible jusqu'à interaction
+        /* Son d'alarme via vibration longue + son système */
+        vibrate         : [500, 200, 500, 200, 500, 200, 1000],
+        tag             : tag || 'alarm',
+        requireInteraction: true,
+        silent          : false,   /* Active le son système de la notif */
         actions: [
             { action: 'open',    title: '📱 Valider maintenant' },
             { action: 'dismiss', title: 'Ignorer' }
@@ -124,144 +116,319 @@ async function handleAlert(isAlert1, isAlert2, isAlert3, now) {
     });
 }
 
-/* ── MALUS AUTOMATIQUE À 23h59 ───────────────────────────────────
-   Pour chaque colocataire qui n'a PAS validé sa mission :
-   1. Retire 2 points (minimum 0, jamais négatif)
-   2. Enregistre la semaine comme "tache_en_retard" dans Supabase
-   3. Insère une ligne dans les logs (type: malus_auto)
-   4. Envoie une notification récapitulative
+/* ── ENVOI NOTIFICATION VALIDATION (son doux) ──────────────────── */
+function sendValidationNotif(nom, mission) {
+    self.registration.showNotification('✅ ' + nom + ' a validé sa tâche !', {
+        body   : mission + ' — C\'est fait cette semaine 💪',
+        icon   : '/icon-192.png',
+        badge  : '/icon-192.png',
+        vibrate: [100, 50, 100],   /* Vibration courte et douce */
+        tag    : 'validation-' + nom + '-' + Date.now(),
+        silent : false,            /* Son système activé */
+        requireInteraction: false  /* Disparaît automatiquement */
+    });
+}
 
-   Ce malus ne s'applique QU'UNE SEULE FOIS par semaine
-   grâce à la clé de cache "malus_week_XX"                    */
-async function handleAutoMalus(now) {
-    const weekNum  = getWeekNumber();
-    const malusKey = `malus_week_${weekNum}`;
-    const cache    = await caches.open(CACHE_NAME);
+/* ── MALUS AUTOMATIQUE 23h59 ───────────────────────────────────── */
+function handleAutoMalus(now) {
+    var weekNum  = getWeekNumber();
+    var malusKey = 'malus_week_' + weekNum;
 
-    /* Vérifie si le malus de cette semaine a déjà été appliqué */
-    if (await cache.match(malusKey)) return;
-    await cache.put(malusKey, new Response('done'));
+    caches.open(CACHE_NAME).then(function(cache) {
+        cache.match(malusKey).then(function(already) {
+            if (already) return;
+            cache.put(malusKey, new Response('done'));
 
-    try {
-        /* Récupère tous les utilisateurs avec leurs infos */
-        const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/scores?select=id,name,points,last_week_validated,tache_en_retard,retard_valide`,
-            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-        );
-        const users = await res.json();
+            fetch(SUPABASE_URL + '/rest/v1/scores?select=id,name,points,last_week_validated,tache_en_retard', { headers: HEADERS })
+            .then(function(res) { return res.json(); })
+            .then(function(users) {
+                var nonValides = users.filter(function(u) {
+                    return u.last_week_validated !== weekNum && !u.tache_en_retard;
+                });
 
-        /* Filtre : non-validés ET sans retard déjà en cours */
-        const nonValides = users.filter(u =>
-            u.last_week_validated !== weekNum &&
-            !u.tache_en_retard
-        );
+                if (nonValides.length === 0) return;
 
-        if (nonValides.length === 0) return;
+                var promises = nonValides.map(function(user) {
+                    var newPoints = Math.max(0, user.points - 2);
+                    return fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
+                        method : 'PATCH',
+                        headers: Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' }),
+                        body   : JSON.stringify({ points: newPoints, tache_en_retard: weekNum, retard_valide: false })
+                    }).then(function() {
+                        return fetch(SUPABASE_URL + '/rest/v1/logs', {
+                            method : 'POST',
+                            headers: Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' }),
+                            body   : JSON.stringify({ name: user.name, points_gagnes: -2, type: 'malus_auto' })
+                        });
+                    });
+                });
 
-        /* Applique le malus à chaque non-validé */
-        for (const user of nonValides) {
-            const newPoints = Math.max(0, user.points - 2); // Jamais en dessous de 0
-
-            /* Met à jour le score ET enregistre la semaine en retard */
-            await fetch(`${SUPABASE_URL}/rest/v1/scores?id=eq.${user.id}`, {
-                method : 'PATCH',
-                headers: {
-                    'apikey'      : SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer'      : 'return=minimal'
-                },
-                body: JSON.stringify({
-                    points          : newPoints,
-                    tache_en_retard : weekNum, // numéro de la semaine non faite
-                    retard_valide   : false    // pas encore rattrapé
-                })
+                Promise.all(promises).then(function() {
+                    var names = nonValides.map(function(u) { return u.name; }).join(', ');
+                    sendAlarmNotif(
+                        '🚨 Malus automatique appliqué !',
+                        names + ' ont perdu 2 points — tâche non validée.',
+                        malusKey
+                    );
+                });
             });
-
-            /* Ajoute une entrée dans le journal d'activité */
-            await fetch(`${SUPABASE_URL}/rest/v1/logs`, {
-                method : 'POST',
-                headers: {
-                    'apikey'      : SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer'      : 'return=minimal'
-                },
-                body: JSON.stringify({
-                    name          : user.name,
-                    points_gagnes : -2,
-                    type          : 'malus_auto' // distingue du malus manuel admin
-                })
-            });
-        }
-
-        /* Notification récapitulative après application des malus */
-        const names = nonValides.map(u => u.name).join(', ');
-        self.registration.showNotification('🚨 Malus automatique appliqué !', {
-            body   : `${names} ${nonValides.length > 1 ? 'ont' : 'a'} perdu 2 points — tâche non validée. Rattrapage obligatoire la semaine prochaine.`,
-            icon   : '/icon-192.png',
-            vibrate: [300, 100, 300],
-            tag    : malusKey,
         });
-
-    } catch (e) {
-        console.error('[SW] Erreur malus auto :', e);
-    }
+    });
 }
 
-/* ── HELPER : LISTE DES NON-VALIDÉS ─────────────────────────────
-   Interroge Supabase et retourne les noms des colocataires
-   qui n'ont pas encore validé leur mission cette semaine      */
-async function getUnvalidatedColocs() {
-    try {
-        const weekNum = getWeekNumber();
-        const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/scores?select=name,last_week_validated`,
-            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-        );
-        const users = await res.json();
-        return users
-            .filter(u => u.last_week_validated !== weekNum)
-            .map(u => u.name);
-    } catch (e) {
-        return [];
-    }
+/* ── HELPER : NON-VALIDÉS ──────────────────────────────────────── */
+function getUnvalidatedColocs() {
+    var weekNum = getWeekNumber();
+    return fetch(SUPABASE_URL + '/rest/v1/scores?select=name,last_week_validated', { headers: HEADERS })
+        .then(function(res) { return res.json(); })
+        .then(function(users) {
+            return users.filter(function(u) { return u.last_week_validated !== weekNum; })
+                        .map(function(u) { return u.name; });
+        })
+        .catch(function() { return []; });
 }
 
-/* ── HELPER : NUMÉRO DE SEMAINE ─────────────────────────────
-   Calcule le numéro de semaine basé sur le LUNDI.
-   Chaque lundi à 00h00 → nouvelle semaine → nouvelles missions.
-   Dimanche soir ≠ lundi matin (semaines différentes).        */
+/* ── NUMÉRO DE SEMAINE (basé sur le lundi) ─────────────────────── */
 function getWeekNumber() {
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const day = now.getDay();
-    const monday = new Date(now);
+    var now = new Date();
+    var startOfYear = new Date(now.getFullYear(), 0, 1);
+    var day = now.getDay();
+    var monday = new Date(now);
     monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
     monday.setHours(0, 0, 0, 0);
-    const days = Math.floor((monday - startOfYear) / 86400000);
+    var days = Math.floor((monday - startOfYear) / 86400000);
     return Math.floor(days / 7) + 1;
 }
 
-/* ── GESTION DU CLIC SUR UNE NOTIFICATION ───────────────────────
-   Quand l'utilisateur clique sur la notif :
-   - "Valider maintenant" → ouvre ou focus l'app
-   - "Ignorer" → ferme juste la notification                   */
-self.addEventListener('notificationclick', (event) => {
+/* ── CLIC SUR NOTIFICATION ─────────────────────────────────────── */
+self.addEventListener('notificationclick', function(event) {
     event.notification.close();
     if (event.action === 'dismiss') return;
-
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
-                /* Si l'app est déjà ouverte → met le focus dessus */
-                for (const client of clientList) {
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        return client.focus();
-                    }
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            for (var i = 0; i < clientList.length; i++) {
+                if (clientList[i].url.indexOf(self.location.origin) !== -1 && 'focus' in clientList[i]) {
+                    return clientList[i].focus();
                 }
-                /* Sinon → ouvre une nouvelle fenêtre */
-                return clients.openWindow('/');
-            })
+            }
+            return clients.openWindow('/');
+        })
+    );
+});
+/* ================================================================
+   SERVICE WORKER — Gestion Appart 48
+   ================================================================
+   CE QU'IL FAIT :
+   • Dimanche 15h, 20h, 23h30 → notification d'alerte avec son
+   • Dimanche 23h59 → malus automatique -2pts dans Supabase
+   • À chaque validation → notification "X a validé sa tâche ✅"
+================================================================ */
+
+const CACHE_NAME = 'gestion-appart-48-v4';
+const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
+const HEADERS = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json'
+};
+
+/* ── CYCLE DE VIE ──────────────────────────────────────────────── */
+self.addEventListener('install', function() { self.skipWaiting(); });
+self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
+
+/* ── MESSAGES DEPUIS L'APP ─────────────────────────────────────── */
+self.addEventListener('message', function(event) {
+    if (!event.data) return;
+
+    /* Démarre la boucle de vérification dimanche */
+    if (event.data.type === 'SCHEDULE_CHECKS') {
+        startCheckLoop();
+    }
+
+    /* Notification de validation envoyée par l'app */
+    if (event.data.type === 'VALIDATION_NOTIF') {
+        sendValidationNotif(event.data.nom, event.data.mission);
+    }
+
+    /* Test admin : déclenche une alarme immédiate */
+    if (event.data.type === 'TEST_ALARM') {
+        sendAlarmNotif('🚨 TEST ALARME — Admin', 'Ceci est un test de l\'alarme du dimanche.', 'test');
+    }
+
+    /* Test admin : simule une notification de validation */
+    if (event.data.type === 'TEST_VALIDATION') {
+        sendValidationNotif(event.data.nom || 'PAKITO', event.data.mission || '🧹 Cuisine + Salon');
+    }
+});
+
+/* ── BOUCLE VÉRIFICATION DIMANCHE ──────────────────────────────── */
+function startCheckLoop() {
+    checkAndAct();
+    setInterval(checkAndAct, 60 * 1000);
+}
+
+function checkAndAct() {
+    var now    = new Date();
+    var day    = now.getDay();    // 0 = dimanche
+    var hour   = now.getHours();
+    var minute = now.getMinutes();
+
+    if (day !== 0) return;
+
+    var isAlert1    = hour === 15 && minute === 0;
+    var isAlert2    = hour === 20 && minute === 0;
+    var isAlert3    = hour === 23 && minute === 30;
+    var isMalusTime = hour === 23 && minute === 59;
+
+    if (isAlert1 || isAlert2 || isAlert3) handleAlert(isAlert1, isAlert2, isAlert3, now);
+    if (isMalusTime) handleAutoMalus(now);
+}
+
+/* ── ALERTES DIMANCHE AVEC SON D'ALARME ────────────────────────── */
+function handleAlert(isAlert1, isAlert2, isAlert3, now) {
+    var alertKey = 'alert_' + now.toISOString().slice(0, 15);
+
+    caches.open(CACHE_NAME).then(function(cache) {
+        cache.match(alertKey).then(function(already) {
+            if (already) return;
+            cache.put(alertKey, new Response('sent'));
+
+            getUnvalidatedColocs().then(function(unvalidated) {
+                if (unvalidated.length === 0) return;
+
+                var title, body;
+                if (isAlert1) {
+                    title = '⚠️ Rappel 15h — Mission non faite !';
+                    body  = unvalidated.join(', ') + ' n\'ont pas encore validé leur mission !';
+                } else if (isAlert2) {
+                    title = '🔔 Rappel 20h — Plus que quelques heures !';
+                    body  = unvalidated.join(', ') + ' — Validez avant ce soir.';
+                } else {
+                    title = '🚨 23h30 — DERNIÈRE CHANCE avant malus !';
+                    body  = unvalidated.join(', ') + ' — Validez avant minuit ou perdez 2 points !';
+                }
+
+                sendAlarmNotif(title, body, alertKey);
+            });
+        });
+    });
+}
+
+/* ── ENVOI NOTIFICATION ALARME (son d'alarme) ──────────────────── */
+function sendAlarmNotif(title, body, tag) {
+    self.registration.showNotification(title, {
+        body            : body,
+        icon            : '/icon-192.png',
+        badge           : '/icon-192.png',
+        /* Son d'alarme via vibration longue + son système */
+        vibrate         : [500, 200, 500, 200, 500, 200, 1000],
+        tag             : tag || 'alarm',
+        requireInteraction: true,
+        silent          : false,   /* Active le son système de la notif */
+        actions: [
+            { action: 'open',    title: '📱 Valider maintenant' },
+            { action: 'dismiss', title: 'Ignorer' }
+        ]
+    });
+}
+
+/* ── ENVOI NOTIFICATION VALIDATION (son doux) ──────────────────── */
+function sendValidationNotif(nom, mission) {
+    self.registration.showNotification('✅ ' + nom + ' a validé sa tâche !', {
+        body   : mission + ' — C\'est fait cette semaine 💪',
+        icon   : '/icon-192.png',
+        badge  : '/icon-192.png',
+        vibrate: [100, 50, 100],   /* Vibration courte et douce */
+        tag    : 'validation-' + nom + '-' + Date.now(),
+        silent : false,            /* Son système activé */
+        requireInteraction: false  /* Disparaît automatiquement */
+    });
+}
+
+/* ── MALUS AUTOMATIQUE 23h59 ───────────────────────────────────── */
+function handleAutoMalus(now) {
+    var weekNum  = getWeekNumber();
+    var malusKey = 'malus_week_' + weekNum;
+
+    caches.open(CACHE_NAME).then(function(cache) {
+        cache.match(malusKey).then(function(already) {
+            if (already) return;
+            cache.put(malusKey, new Response('done'));
+
+            fetch(SUPABASE_URL + '/rest/v1/scores?select=id,name,points,last_week_validated,tache_en_retard', { headers: HEADERS })
+            .then(function(res) { return res.json(); })
+            .then(function(users) {
+                var nonValides = users.filter(function(u) {
+                    return u.last_week_validated !== weekNum && !u.tache_en_retard;
+                });
+
+                if (nonValides.length === 0) return;
+
+                var promises = nonValides.map(function(user) {
+                    var newPoints = Math.max(0, user.points - 2);
+                    return fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
+                        method : 'PATCH',
+                        headers: Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' }),
+                        body   : JSON.stringify({ points: newPoints, tache_en_retard: weekNum, retard_valide: false })
+                    }).then(function() {
+                        return fetch(SUPABASE_URL + '/rest/v1/logs', {
+                            method : 'POST',
+                            headers: Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' }),
+                            body   : JSON.stringify({ name: user.name, points_gagnes: -2, type: 'malus_auto' })
+                        });
+                    });
+                });
+
+                Promise.all(promises).then(function() {
+                    var names = nonValides.map(function(u) { return u.name; }).join(', ');
+                    sendAlarmNotif(
+                        '🚨 Malus automatique appliqué !',
+                        names + ' ont perdu 2 points — tâche non validée.',
+                        malusKey
+                    );
+                });
+            });
+        });
+    });
+}
+
+/* ── HELPER : NON-VALIDÉS ──────────────────────────────────────── */
+function getUnvalidatedColocs() {
+    var weekNum = getWeekNumber();
+    return fetch(SUPABASE_URL + '/rest/v1/scores?select=name,last_week_validated', { headers: HEADERS })
+        .then(function(res) { return res.json(); })
+        .then(function(users) {
+            return users.filter(function(u) { return u.last_week_validated !== weekNum; })
+                        .map(function(u) { return u.name; });
+        })
+        .catch(function() { return []; });
+}
+
+/* ── NUMÉRO DE SEMAINE (basé sur le lundi) ─────────────────────── */
+function getWeekNumber() {
+    var now = new Date();
+    var startOfYear = new Date(now.getFullYear(), 0, 1);
+    var day = now.getDay();
+    var monday = new Date(now);
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    monday.setHours(0, 0, 0, 0);
+    var days = Math.floor((monday - startOfYear) / 86400000);
+    return Math.floor(days / 7) + 1;
+}
+
+/* ── CLIC SUR NOTIFICATION ─────────────────────────────────────── */
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    if (event.action === 'dismiss') return;
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            for (var i = 0; i < clientList.length; i++) {
+                if (clientList[i].url.indexOf(self.location.origin) !== -1 && 'focus' in clientList[i]) {
+                    return clientList[i].focus();
+                }
+            }
+            return clients.openWindow('/');
+        })
     );
 });

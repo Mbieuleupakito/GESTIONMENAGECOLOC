@@ -628,7 +628,7 @@
             }
 
             if (selectedTargets.length === 0) {
-                preview.textContent = 'Sélectionne des destinataires pour voir l'aperçu...';
+                preview.textContent = 'Sélectionne des destinataires — aperçu ici...';
                 return;
             }
 
@@ -737,7 +737,7 @@
             document.querySelectorAll('.target-btn').forEach(function(btn) {
                 btn.className = 'target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95';
             });
-            document.getElementById('notif-preview').textContent = 'Sélectionne des destinataires pour voir l'aperçu...';
+            document.getElementById('notif-preview').textContent = 'Sélectionne des destinataires — aperçu ici...';
         }
 
         /* ── SONS VIA WEB AUDIO API ─────────────────────────────────

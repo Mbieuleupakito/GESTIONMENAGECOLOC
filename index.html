@@ -1,193 +1,46 @@
 <!DOCTYPE html>
-<!-- ================================================================
-     GESTION COLOC — Appart 48
-     ================================================================
-     FICHIER PRINCIPAL DE L'APPLICATION.
-
-     CE QU'IL FAIT :
-     • Affiche les missions hebdomadaires de chaque colocataire
-     • Gère le système de points (validation, malus, rattrapage)
-     • Affiche le podium et le graphique des scores en temps réel
-     • Affiche le journal des dernières actions (Live Activity)
-     • Gère le mode sombre/clair
-     • Enregistre le Service Worker pour les alertes automatiques
-     • Demande la permission de notifications au premier accès
-
-     STRUCTURE DE LA PAGE :
-     ┌──────────────────────────────────────────┐
-     │  BANNIÈRE (demande notifs, si pas encore) │
-     │  HEADER (titre + bouton thème)            │
-     ├───────────────────┬──────────────────────┤
-     │  MISSIONS HEBDO   │  PODIUM              │
-     │  (5 cartes fixes) │  GRAPHIQUE           │
-     │                   │  LIVE ACTIVITY       │
-     ├───────────────────┴──────────────────────┤
-     │  FOOTER                                   │
-     └──────────────────────────────────────────┘
-================================================================ -->
 <html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Titre de l'onglet navigateur -->
     <title>Gestion Coloc | Appart 48</title>
-
     <meta name="author" content="Honoré Mbieleu Pakito">
-    <meta name="copyright" content="© 2026 Honoré Mbieleu Pakito">
-
-    <!-- PWA : permet d'installer l'app sur l'écran d'accueil -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1d4ed8">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GestionColoc">
-
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS SDK — version fixe compatible Safari iOS -->
-    <!-- fetch natif utilisé à la place du SDK Supabase -->
-    <!-- Chart.js (graphique en barres) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        /* Active le mode sombre via la classe "dark" sur <html> */
-        tailwind.config = { darkMode: 'class' }
-    </script>
-
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
-        /* ── SCROLLBAR FINE ET DISCRÈTE ─────────────────────────── */
-        ::-webkit-scrollbar       { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-
-        /* ── TRANSITION DOUCE LORS DU CHANGEMENT DE THÈME ───────── */
-        .transition-theme {
-            transition: background-color 0.4s, color 0.4s, border-color 0.4s;
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3b82f6;border-radius:10px}
+        .transition-theme{transition:background-color .4s,color .4s,border-color .4s}
+        @media(min-width:1024px){
+            body{overflow:hidden;height:100vh}
+            #main-grid{height:calc(100vh - 108px);overflow:hidden}
+            #col-missions{height:100%;overflow:hidden;display:flex;flex-direction:column}
+            #col-missions>div{height:100%;display:flex;flex-direction:column;padding:14px 18px!important}
+            #col-missions h2{font-size:1.1rem!important;margin-bottom:6px!important}
+            #col-missions .flex.flex-wrap{margin-bottom:6px!important}
+            #tasks-container{flex:1;display:flex;flex-direction:column;justify-content:space-around;overflow:hidden;gap:0!important}
+            #tasks-container .mission-card,#tasks-container>div{padding:8px 14px!important;border-radius:16px!important;flex-shrink:0}
+            #tasks-container p.font-bold{font-size:.8rem!important}
+            #tasks-container button{padding:6px 14px!important;font-size:9px!important;border-radius:10px!important}
+            #col-right{height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:1rem}
         }
-
-        /* ── LAYOUT PC : hauteur fixe, aucun scroll global ───────── */
-        @media (min-width: 1024px) {
-            body        { overflow: hidden; height: 100vh; }
-
-            /* La zone principale occupe tout l'espace entre header et footer */
-            #main-grid  { height: calc(100vh - 108px); overflow: hidden; }
-
-            /* Colonne gauche : les 5 cartes missions s'étalent
-               sur toute la hauteur — AUCUN scroll, tout visible */
-            #col-missions {
-                height: 100%;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-            }
-
-            /* Bloc blanc intérieur */
-            #col-missions > div {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                padding: 14px 18px !important;
-            }
-
-            /* Titre missions */
-            #col-missions h2 {
-                font-size: 1.1rem !important;
-                margin-bottom: 6px !important;
-            }
-
-            /* Légende */
-            #col-missions .flex.flex-wrap {
-                margin-bottom: 6px !important;
-            }
-
-            /* Conteneur cartes : répartition uniforme sans scroll */
-            #tasks-container {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-around;
-                overflow: hidden;
-                gap: 0 !important;
-            }
-
-            /* Cartes missions plus compactes */
-            #tasks-container .mission-card,
-            #tasks-container > div {
-                padding: 8px 14px !important;
-                border-radius: 16px !important;
-                flex-shrink: 0;
-            }
-
-            /* Texte des cartes plus petit */
-            #tasks-container p.font-bold {
-                font-size: 0.8rem !important;
-            }
-
-            /* Boutons plus compacts */
-            #tasks-container button {
-                padding: 6px 14px !important;
-                font-size: 9px !important;
-                border-radius: 10px !important;
-            }
-
-            /* Colonne droite : scroll interne si le contenu dépasse */
-            #col-right {
-                height: 100%;
-                overflow-y: auto;
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-        }
-
-        /* ── LAYOUT MOBILE : scroll global normal ────────────────── */
-        @media (max-width: 1023px) {
-            body       { overflow-y: auto; }
-            #main-grid { overflow: visible; }
-            #col-right { display: flex; flex-direction: column; gap: 1.5rem; }
-        }
-
-        /* ── ANIMATIONS CARTES MISSIONS ─────────────────────────── */
-        .mission-card { transition: transform 0.15s ease; }
-        .mission-card:hover { transform: scale(1.01); }
-
-        /* ── CARTE EN RETARD (rouge) ─────────────────────────────── */
-        .mission-retard {
-            border-color: #ef4444 !important;
-            background: linear-gradient(135deg, #fff1f2, #fef2f2) !important;
-        }
-        .dark .mission-retard {
-            background: linear-gradient(135deg, #450a0a40, #7f1d1d30) !important;
-            border-color: #ef4444 !important;
-        }
-
-        /* ── CARTE BLOQUÉE (grisée, non cliquable) ───────────────── */
-        .mission-bloquee {
-            opacity: 0.4;
-            pointer-events: none; /* empêche tout clic */
-        }
-
-        /* ── ANIMATION BANNIÈRE NOTIFICATIONS ───────────────────── */
-        #notif-banner { animation: slideDown 0.4s ease; }
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to   { transform: translateY(0);     opacity: 1; }
-        }
-
-        /* ── TOAST (message flash en bas d'écran) ────────────────── */
-        #toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+        @media(max-width:1023px){body{overflow-y:auto}#main-grid{overflow:visible}#col-right{display:flex;flex-direction:column;gap:1.5rem}}
+        .mission-card{transition:transform .15s ease}.mission-card:hover{transform:scale(1.01)}
+        .mission-retard{border-color:#ef4444!important;background:linear-gradient(135deg,#fff1f2,#fef2f2)!important}
+        .dark .mission-retard{background:linear-gradient(135deg,#450a0a40,#7f1d1d30)!important;border-color:#ef4444!important}
+        .mission-bloquee{opacity:.4;pointer-events:none}
+        #notif-banner{animation:slideDown .4s ease}
+        @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        #toast{transition:opacity .3s ease,transform .3s ease}
     </style>
 </head>
-
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-theme flex flex-col" id="app-body">
 
-    <!-- ============================================================
-         BANNIÈRE DEMANDE DE NOTIFICATIONS
-         Apparaît automatiquement si l'utilisateur n'a pas encore
-         accepté les notifications. Disparaît après acceptation
-         ou après avoir cliqué ✕ (mémorisé dans localStorage).
-    ============================================================ -->
     <div id="notif-banner" class="hidden bg-blue-600 text-white px-4 py-3 flex items-center justify-between gap-3 shrink-0 z-40">
         <div class="flex items-center gap-3">
             <span class="text-xl">🔔</span>
@@ -197,710 +50,340 @@
             </div>
         </div>
         <div class="flex gap-2 shrink-0">
-            <button onclick="requestNotificationPermission()"
-                class="bg-white text-blue-600 font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-all">
-                ACTIVER
-            </button>
-            <button onclick="dismissBanner()"
-                class="bg-white/20 text-white font-bold px-3 py-2 rounded-xl text-xs">✕</button>
+            <button onclick="requestNotificationPermission()" class="bg-white text-blue-600 font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-all">ACTIVER</button>
+            <button onclick="dismissBanner()" class="bg-white/20 text-white font-bold px-3 py-2 rounded-xl text-xs">✕</button>
         </div>
     </div>
 
-    <!-- ============================================================
-         HEADER
-         Contient le titre de l'app, le numéro de semaine,
-         l'indicateur de notifications et le bouton thème.
-         Le titre est aussi le déclencheur du panel admin (5 clics).
-    ============================================================ -->
     <header class="bg-blue-700 text-white px-6 py-4 shadow-2xl z-50 flex justify-between items-center shrink-0">
         <div class="flex flex-col">
-            <!-- 5 clics rapides sur ce titre → ouvre le panel admin -->
-            <h1 id="admin-trigger"
-                class="text-xl lg:text-2xl font-black italic tracking-tighter cursor-pointer select-none">
-                🏠 GESTION APPART 48
-            </h1>
-            <!-- Numéro de semaine affiché dynamiquement -->
-            <p id="week-info" class="text-[10px] font-bold uppercase tracking-widest opacity-80 italic">
-                Chargement...
-            </p>
+            <h1 id="admin-trigger" class="text-xl lg:text-2xl font-black italic tracking-tighter cursor-pointer select-none">🏠 GESTION APPART 48</h1>
+            <p id="week-info" class="text-[10px] font-bold uppercase tracking-widest opacity-80 italic">Chargement...</p>
         </div>
         <div class="flex items-center gap-3">
-            <!-- Icône 🔔 ou 🔕 selon statut notifications -->
-            <div id="notif-status"
-                class="hidden text-lg cursor-pointer"
-                onclick="showNotifInfo()"
-                title="Statut notifications">
-            </div>
-            <!-- Bouton bascule thème clair/sombre -->
-            <button onclick="toggleDarkMode()"
-                class="text-xl p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all active:scale-90">
+            <div id="notif-status" class="hidden text-lg cursor-pointer" onclick="showNotifInfo()" title="Statut notifications"></div>
+            <button onclick="toggleDarkMode()" class="text-xl p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all active:scale-90">
                 <span id="theme-icon">🌓</span>
             </button>
         </div>
     </header>
 
-    <!-- ============================================================
-         ZONE PRINCIPALE
-         Grille 2 colonnes sur PC, 1 colonne sur mobile.
-    ============================================================ -->
     <main id="main-grid" class="max-w-[1800px] mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
-
-        <!-- ══════════════════════════════════════════════════════
-             COLONNE GAUCHE — MISSIONS HEBDOMADAIRES
-             Sur PC : les cartes occupent toute la hauteur sans scroll.
-             Sur mobile : cartes empilées normalement.
-             Les cartes sont générées dynamiquement par renderTasks().
-        ══════════════════════════════════════════════════════ -->
         <div id="col-missions" class="lg:col-span-7">
             <div class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 h-full flex flex-col">
-
-                <!-- Titre section -->
                 <h2 class="font-black text-blue-600 dark:text-blue-400 mb-4 flex items-center text-lg lg:text-2xl uppercase italic shrink-0">
                     <span class="mr-3">🧹</span> Missions Hebdo
                 </h2>
-
-                <!-- Légende des couleurs de cartes -->
                 <div class="flex flex-wrap gap-3 mb-4 shrink-0">
-                    <span class="flex items-center gap-1 text-[9px] font-bold text-red-500">
-                        <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> RETARD
-                    </span>
-                    <span class="flex items-center gap-1 text-[9px] font-bold text-slate-400">
-                        <span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span> BLOQUÉ
-                    </span>
-                    <span class="flex items-center gap-1 text-[9px] font-bold text-blue-500">
-                        <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> SEMAINE EN COURS
-                    </span>
+                    <span class="flex items-center gap-1 text-[9px] font-bold text-red-500"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> RETARD</span>
+                    <span class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span> BLOQUÉ</span>
+                    <span class="flex items-center gap-1 text-[9px] font-bold text-blue-500"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> SEMAINE EN COURS</span>
                 </div>
-
-                <!-- Conteneur des cartes missions (injecté par renderTasks) -->
                 <div id="tasks-container"></div>
             </div>
         </div>
 
-        <!-- ══════════════════════════════════════════════════════
-             COLONNE DROITE — PODIUM + GRAPHIQUE + LIVE ACTIVITY
-             Scroll interne sur PC si le contenu dépasse.
-        ══════════════════════════════════════════════════════ -->
         <div id="col-right" class="lg:col-span-5">
-
-            <!-- PODIUM : classement des colocataires par points -->
             <div class="bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 shrink-0">
                 <h3 class="font-bold text-[10px] uppercase tracking-widest mb-3 opacity-60">👑 Podium Actuel</h3>
-                <!-- Injecté par fetchAllData() -->
                 <div id="leaderboard" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
             </div>
-
-            <!-- GRAPHIQUE EN BARRES : visualisation comparative des scores -->
             <div class="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-md border border-slate-200 dark:border-slate-800 shrink-0" style="min-height:180px;">
                 <canvas id="scoreChart" style="max-height:160px;"></canvas>
             </div>
-
-            <!-- LIVE ACTIVITY : journal des 10 dernières actions -->
-            <div class="bg-slate-900 text-slate-300 p-5 rounded-[2.5rem] shrink-0 flex flex-col shadow-2xl" style="min-height:160px; max-height:220px;">
-                <p class="text-[9px] font-black text-blue-400 uppercase mb-3 tracking-widest italic">
-                    Live Activity
-                </p>
-                <!-- Injecté par fetchAllData() — scroll interne -->
+            <div class="bg-slate-900 text-slate-300 p-5 rounded-[2.5rem] shrink-0 flex flex-col shadow-2xl" style="min-height:160px;max-height:220px;">
+                <p class="text-[9px] font-black text-blue-400 uppercase mb-3 tracking-widest italic">Live Activity</p>
                 <div id="history-logs" class="overflow-y-auto space-y-2 pr-2 flex-grow text-[10px] lg:text-[11px]"></div>
             </div>
-
         </div>
     </main>
 
-    <!-- ============================================================
-         FOOTER
-    ============================================================ -->
     <footer class="bg-white/50 dark:bg-slate-950/50 backdrop-blur-md py-3 text-center border-t border-slate-200 dark:border-slate-800 shrink-0">
-        <p class="text-slate-400 font-bold uppercase tracking-[0.3em] text-[8px] lg:text-[10px]">
-            © 2026 Honoré Mbieleu Pakito | Tous droits réservés
-        </p>
+        <p class="text-slate-400 font-bold uppercase tracking-[0.3em] text-[8px] lg:text-[10px]">© 2026 Honoré Mbieleu Pakito | Tous droits réservés</p>
     </footer>
 
-    <!-- ============================================================
-         PANEL ADMIN (caché par défaut)
-         Accessible uniquement via 5 clics rapides sur le titre.
-         Fonctions : malus manuel, alerte manuelle, reset mensuel.
-    ============================================================ -->
     <div id="admin-panel" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center border-2 border-red-500">
             <h3 class="text-red-600 font-black mb-6 uppercase italic">👑 Pakito Admin Mode</h3>
-
-            <!-- Liste des colocataires avec bouton malus -->
             <div id="admin-malus-list" class="space-y-2 mb-4 max-h-[250px] overflow-y-auto pr-2"></div>
-
-            <!-- Envoie une notification test immédiate -->
-            <button onclick="adminSendAlert()"
-                class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-4">
-                🔔 Envoyer alerte maintenant
-            </button>
-
-            <!-- Boutons fermer / reset -->
+            <button onclick="adminSendAlert()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-4">🔔 Envoyer alerte maintenant</button>
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="document.getElementById('admin-panel').classList.add('hidden')"
-                    class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold">
-                    Fermer
-                </button>
-                <button onclick="resetAllScores()"
-                    class="bg-red-600 text-white py-3 rounded-xl font-bold">
-                    RESET MOIS
-                </button>
+                <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold">Fermer</button>
+                <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold">RESET MOIS</button>
             </div>
         </div>
     </div>
 
-    <!-- ============================================================
-         TOAST — Message flash en bas d'écran
-         Apparaît brièvement pour confirmer une action.
-    ============================================================ -->
-    <div id="toast"
-        class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold max-w-xs text-center">
-    </div>
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold max-w-xs text-center"></div>
 
-    <!-- ============================================================
-         JAVASCRIPT PRINCIPAL
-    ============================================================ -->
     <script>
-
-        /* ── CONFIGURATION SUPABASE ─────────────────────────────────
-           Connexion à la base de données cloud.
-           Les deux tables utilisées :
-           - scores : points, last_week_validated, tache_en_retard, retard_valide
-           - logs   : journal de toutes les actions (validation, malus, rattrapage)
-        ──────────────────────────────────────────────────────────── */
+        /* ── CONFIG ── */
         const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
-
-        /* ── MINI CLIENT SUPABASE EN FETCH NATIF ────────────────────
-           Remplace le SDK @supabase/supabase-js pour une compatibilité
-           maximale avec Safari iOS et tous les navigateurs.
-           Fonctionne avec fetch() natif, sans dépendance externe.
-        ──────────────────────────────────────────────────────────── */
-        const _supabase = {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-            },
-            from(table) {
-                return {
-                    _table: table,
-                    _filters: [],
-                    _order: null,
-                    _limit: null,
-                    select(cols = '*') {
-                        this._cols = cols;
-                        return this;
-                    },
-                    order(col, opts = {}) {
-                        this._order = `${col}=${opts.ascending === false ? 'desc' : 'asc'}`;
-                        return this;
-                    },
-                    limit(n) {
-                        this._limit = n;
-                        return this;
-                    },
-                    eq(col, val) {
-                        this._filters.push(`${col}=eq.${val}`);
-                        return this;
-                    },
-                    neq(col, val) {
-                        this._filters.push(`${col}=neq.${val}`);
-                        return this;
-                    },
-                    async _buildUrl() {
-                        let url = `${SUPABASE_URL}/rest/v1/${this._table}?select=${this._cols || '*'}`;
-                        this._filters.forEach(f => url += `&${f}`);
-                        if (this._order) url += `&order=${this._order}`;
-                        if (this._limit) url += `&limit=${this._limit}`;
-                        return url;
-                    },
-                    async select(cols = '*') {
-                        this._cols = cols;
-                        return this;
-                    },
-                    async get() {
-                        const url = await this._buildUrl();
-                        const res = await fetch(url, { headers: _supabase.headers });
-                        const data = await res.json();
-                        return { data, error: res.ok ? null : data };
-                    },
-                    async update(obj) {
-                        const url = `${SUPABASE_URL}/rest/v1/${this._table}?${this._filters.join('&')}`;
-                        const res = await fetch(url, {
-                            method: 'PATCH',
-                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
-                            body: JSON.stringify(obj)
-                        });
-                        return { error: res.ok ? null : await res.json() };
-                    },
-                    async insert(obj) {
-                        const url = `${SUPABASE_URL}/rest/v1/${this._table}`;
-                        const body = Array.isArray(obj) ? obj[0] : obj;
-                        const res = await fetch(url, {
-                            method: 'POST',
-                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
-                            body: JSON.stringify(body)
-                        });
-                        return { error: res.ok ? null : await res.json() };
-                    },
-                    async delete() {
-                        const url = `${SUPABASE_URL}/rest/v1/${this._table}?${this._filters.join('&')}`;
-                        const res = await fetch(url, {
-                            method: 'DELETE',
-                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' }
-                        });
-                        return { error: res.ok ? null : await res.json() };
-                    }
-                };
-            }
+        const HEADERS = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
         };
 
-        /* Wrapper pour compatibilité avec l'ancienne syntaxe await _supabase.from().select() */
-        const _db = {
-            async query(table, cols = '*', filters = [], order = null, limit = null) {
-                let url = `${SUPABASE_URL}/rest/v1/${table}?select=${cols}`;
-                filters.forEach(f => url += `&${f}`);
-                if (order) url += `&order=${order}`;
-                if (limit) url += `&limit=${limit}`;
-                const res = await fetch(url, { headers: _supabase.headers });
+        /* ── FONCTIONS FETCH SUPABASE ── */
+        async function dbGet(table, cols, filters, order, limit) {
+            try {
+                let url = SUPABASE_URL + '/rest/v1/' + table + '?select=' + (cols || '*');
+                if (filters) filters.forEach(function(f){ url += '&' + f; });
+                if (order) url += '&order=' + order;
+                if (limit) url += '&limit=' + limit;
+                const res = await fetch(url, { headers: HEADERS });
+                if (!res.ok) { console.error('dbGet error', res.status); return []; }
                 const data = await res.json();
-                return { data: Array.isArray(data) ? data : [], error: res.ok ? null : data };
-            },
-            async update(table, obj, filters = []) {
-                let url = `${SUPABASE_URL}/rest/v1/${table}`;
-                if (filters.length) url += '?' + filters.join('&');
-                const res = await fetch(url, {
-                    method: 'PATCH',
-                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
-                    body: JSON.stringify(obj)
-                });
-                return { error: res.ok ? null : await res.json() };
-            },
-            async insert(table, obj) {
-                const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-                    method: 'POST',
-                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
+                return Array.isArray(data) ? data : [];
+            } catch(e) { console.error('dbGet catch', e); return []; }
+        }
+
+        async function dbUpdate(table, obj, filters) {
+            try {
+                let url = SUPABASE_URL + '/rest/v1/' + table;
+                if (filters && filters.length) url += '?' + filters.join('&');
+                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+                await fetch(url, { method: 'PATCH', headers: h, body: JSON.stringify(obj) });
+            } catch(e) { console.error('dbUpdate catch', e); }
+        }
+
+        async function dbInsert(table, obj) {
+            try {
+                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+                await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+                    method: 'POST', headers: h,
                     body: JSON.stringify(Array.isArray(obj) ? obj[0] : obj)
                 });
-                return { error: res.ok ? null : await res.json() };
-            },
-            async delete(table, filters = []) {
-                let url = `${SUPABASE_URL}/rest/v1/${table}`;
-                if (filters.length) url += '?' + filters.join('&');
-                const res = await fetch(url, {
-                    method: 'DELETE',
-                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' }
-                });
-                return { error: res.ok ? null : await res.json() };
-            }
-        };
+            } catch(e) { console.error('dbInsert catch', e); }
+        }
 
-        /* ── DONNÉES STATIQUES ──────────────────────────────────────
-           Liste des colocataires et des missions dans l'ordre fixe.
-           La rotation est calculée via : (index + numSemaine) % 5
-        ──────────────────────────────────────────────────────────── */
-        const colocs  = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
-        const missions = [
-            "🚿 Douche Gauche",
-            "🚽 WC Droit",
-            "🧻 WC Gauche",
-            "🧹 Cuisine + Salon",
-            "🚿 Douche Droite"
-        ];
+        async function dbDelete(table, filters) {
+            try {
+                let url = SUPABASE_URL + '/rest/v1/' + table;
+                if (filters && filters.length) url += '?' + filters.join('&');
+                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+                await fetch(url, { method: 'DELETE', headers: h });
+            } catch(e) { console.error('dbDelete catch', e); }
+        }
 
-        /* Variable globale pour le graphique Chart.js */
-        let myChart;
+        /* ── DONNÉES STATIQUES ── */
+        var colocs  = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
+        var missions = ["🚿 Douche Gauche", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine + Salon", "🚿 Douche Droite"];
+        var myChart;
 
-        /* ── TOAST ──────────────────────────────────────────────────
-           Affiche un message flash en bas d'écran pendant `duration` ms
-        ──────────────────────────────────────────────────────────── */
-        function showToast(msg, duration = 3000) {
-            const t = document.getElementById('toast');
+        /* ── TOAST ── */
+        function showToast(msg, duration) {
+            duration = duration || 3000;
+            var t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.remove('hidden');
             t.style.opacity = '1';
             t.style.transform = 'translateX(-50%) translateY(0)';
-            setTimeout(() => {
+            setTimeout(function(){
                 t.style.opacity = '0';
                 t.style.transform = 'translateX(-50%) translateY(20px)';
-                setTimeout(() => t.classList.add('hidden'), 300);
+                setTimeout(function(){ t.classList.add('hidden'); }, 300);
             }, duration);
         }
 
-        /* ── NUMÉRO DE SEMAINE ──────────────────────────────────────
-           Calcule le numéro de semaine basé sur le LUNDI.
-           Chaque lundi à 00h00 → nouvelle semaine → nouvelles missions.
-           Dimanche 15 mars ≠ lundi 16 mars (semaines différentes).
-        ──────────────────────────────────────────────────────────── */
+        /* ── NUMÉRO DE SEMAINE (basé sur le lundi) ── */
         function getWeekNumber() {
-            const now = new Date();
-            const startOfYear = new Date(now.getFullYear(), 0, 1);
-            // Trouve le lundi de la semaine courante
-            const day = now.getDay();
-            const monday = new Date(now);
+            var now = new Date();
+            var startOfYear = new Date(now.getFullYear(), 0, 1);
+            var day = now.getDay();
+            var monday = new Date(now);
             monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
             monday.setHours(0, 0, 0, 0);
-            // Nombre de semaines depuis le 1er janvier
-            const days = Math.floor((monday - startOfYear) / 86400000);
+            var days = Math.floor((monday - startOfYear) / 86400000);
             return Math.floor(days / 7) + 1;
         }
 
-        /* ── MISSION D'UN COLOCATAIRE POUR UNE SEMAINE DONNÉE ───────
-           Utilisé pour afficher la mission en retard (semaine passée)
-           ET la mission en cours (semaine actuelle).
-        ──────────────────────────────────────────────────────────── */
         function getMissionForWeek(colocIndex, weekNum) {
             return missions[(colocIndex + weekNum) % missions.length];
         }
 
-        /* ── RENDU DES CARTES MISSIONS ──────────────────────────────
-           Génère le HTML des cartes pour chaque colocataire selon son état :
-
-           CAS 1 — Retard en cours (tache_en_retard défini et retard_valide = false) :
-             → Carte rouge "RATTRAPER" (priorité absolue)
-             → Carte bleue "BLOQUÉE" en dessous (inaccessible tant que retard non fait)
-
-           CAS 2 — Pas de retard :
-             → Carte bleue normale avec bouton VALIDER
-             → Si déjà validé cette semaine → bouton ✅ désactivé
-        ──────────────────────────────────────────────────────────── */
+        /* ── RENDU DES CARTES ── */
         function renderTasks(users) {
-            const week      = getWeekNumber();
-            const container = document.getElementById('tasks-container');
+            var week = getWeekNumber();
+            var container = document.getElementById('tasks-container');
             container.innerHTML = '';
 
-            colocs.forEach((nom, i) => {
-                const user = users.find(u => u.name === nom);
+            colocs.forEach(function(nom, i) {
+                var user = users.find(function(u){ return u.name === nom; });
                 if (!user) return;
 
-                const missionCourante = getMissionForWeek(i, week);
-                const aUnRetard       = user.tache_en_retard && !user.retard_valide;
-                const retardRattrapé  = user.tache_en_retard && user.retard_valide;
+                var missionCourante = getMissionForWeek(i, week);
+                var aUnRetard = user.tache_en_retard && !user.retard_valide;
+                var retardRattrapé = user.tache_en_retard && user.retard_valide;
 
                 if (aUnRetard) {
-                    /* ── CARTE RETARD ──────────────────────────────── */
-                    const missionRetard = getMissionForWeek(i, user.tache_en_retard);
-                    container.innerHTML += `
-                    <div class="mission-card mission-retard p-3 lg:p-4 rounded-3xl border-2 flex justify-between items-center">
-                        <div class="leading-tight">
-                            <div class="flex items-center gap-2 mb-1">
-                                <p class="text-[8px] lg:text-[10px] font-black text-red-500 uppercase tracking-widest">${nom}</p>
-                                <span class="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">
-                                    ⚠️ RETARD S${user.tache_en_retard}
-                                </span>
-                            </div>
-                            <p class="font-bold text-xs lg:text-base text-red-700 dark:text-red-300">${missionRetard}</p>
-                            <p class="text-[8px] text-red-400 font-bold mt-0.5">À faire en priorité</p>
-                        </div>
-                        <button onclick="validerRetard('${nom}', this)"
-                            class="bg-red-500 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg active:scale-95 transition-all">
-                            RATTRAPER
-                        </button>
-                    </div>`;
-
-                    /* ── CARTE SEMAINE EN COURS (BLOQUÉE) ──────────── */
-                    container.innerHTML += `
-                    <div class="mission-card mission-bloquee bg-slate-100 dark:bg-slate-800/30 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                        <div class="leading-tight">
-                            <div class="flex items-center gap-2 mb-1">
-                                <p class="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">${nom}</p>
-                                <span class="bg-slate-400 text-white text-[7px] font-black px-2 py-0.5 rounded-full">🔒 BLOQUÉ</span>
-                            </div>
-                            <p class="font-bold text-xs lg:text-base text-slate-400">${missionCourante}</p>
-                            <p class="text-[8px] text-slate-400 font-bold mt-0.5">Disponible après le rattrapage</p>
-                        </div>
-                        <button disabled class="bg-slate-300 dark:bg-slate-700 text-slate-400 px-4 py-2 rounded-xl font-black text-[9px] cursor-not-allowed">
-                            🔒
-                        </button>
-                    </div>`;
-
+                    var missionRetard = getMissionForWeek(i, user.tache_en_retard);
+                    container.innerHTML += '<div class="mission-card mission-retard p-3 lg:p-4 rounded-3xl border-2 flex justify-between items-center"><div class="leading-tight"><div class="flex items-center gap-2 mb-1"><p class="text-[8px] lg:text-[10px] font-black text-red-500 uppercase tracking-widest">' + nom + '</p><span class="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">⚠️ RETARD S' + user.tache_en_retard + '</span></div><p class="font-bold text-xs lg:text-base text-red-700 dark:text-red-300">' + missionRetard + '</p><p class="text-[8px] text-red-400 font-bold mt-0.5">À faire en priorité</p></div><button onclick="validerRetard(\'' + nom + '\', this)" class="bg-red-500 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg active:scale-95 transition-all">RATTRAPER</button></div>';
+                    container.innerHTML += '<div class="mission-card mission-bloquee bg-slate-100 dark:bg-slate-800/30 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center"><div class="leading-tight"><div class="flex items-center gap-2 mb-1"><p class="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">' + nom + '</p><span class="bg-slate-400 text-white text-[7px] font-black px-2 py-0.5 rounded-full">🔒 BLOQUÉ</span></div><p class="font-bold text-xs lg:text-base text-slate-400">' + missionCourante + '</p><p class="text-[8px] text-slate-400 font-bold mt-0.5">Disponible après le rattrapage</p></div><button disabled class="bg-slate-300 dark:bg-slate-700 text-slate-400 px-4 py-2 rounded-xl font-black text-[9px] cursor-not-allowed">🔒</button></div>';
                 } else {
-                    /* ── CARTE NORMALE ─────────────────────────────── */
-                    const dejàValidé = user.last_week_validated === week;
-                    container.innerHTML += `
-                    <div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                        <div class="leading-tight">
-                            <p class="text-[8px] lg:text-[10px] font-black text-blue-500 uppercase tracking-widest">${nom}</p>
-                            <p class="font-bold text-xs lg:text-base dark:text-white">${missionCourante}</p>
-                            ${retardRattrapé
-                                ? `<p class="text-[8px] text-green-500 font-bold mt-0.5">✅ Retard S${user.tache_en_retard} rattrapé !</p>`
-                                : ''}
-                        </div>
-                        <button data-name="${nom}" onclick="addPoints('${nom}', this)"
-                            class="${dejàValidé
-                                ? 'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold'
-                                : 'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg active:scale-95 transition-all'}"
-                            ${dejàValidé ? 'disabled' : ''}>
-                            ${dejàValidé ? '✅' : 'VALIDER'}
-                        </button>
-                    </div>`;
+                    var dejàValidé = user.last_week_validated === week;
+                    var rattrapéHtml = retardRattrapé ? '<p class="text-[8px] text-green-500 font-bold mt-0.5">✅ Retard S' + user.tache_en_retard + ' rattrapé !</p>' : '';
+                    var btnClass = dejàValidé ? 'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold' : 'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg active:scale-95 transition-all';
+                    var btnDisabled = dejàValidé ? 'disabled' : '';
+                    var btnText = dejàValidé ? '✅' : 'VALIDER';
+                    container.innerHTML += '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center"><div class="leading-tight"><p class="text-[8px] lg:text-[10px] font-black text-blue-500 uppercase tracking-widest">' + nom + '</p><p class="font-bold text-xs lg:text-base dark:text-white">' + missionCourante + '</p>' + rattrapéHtml + '</div><button data-name="' + nom + '" onclick="addPoints(\'' + nom + '\', this)" class="' + btnClass + '" ' + btnDisabled + '>' + btnText + '</button></div>';
                 }
             });
         }
 
-        /* ── VALIDER LE RATTRAPAGE ──────────────────────────────────
-           Marque retard_valide = true dans Supabase.
-           Débloque la carte de la semaine en cours.
-           Ajoute un log de type "rattrapage" (0 pts, juste un suivi).
-        ──────────────────────────────────────────────────────────── */
+        /* ── VALIDER RETARD ── */
         async function validerRetard(nom, btn) {
             try {
-                const { data: all } = await _db.query('scores', '*');
-                const user = all.find(u => u.name === nom);
+                var all = await dbGet('scores', '*');
+                var user = all.find(function(u){ return u.name === nom; });
                 if (!user || user.retard_valide) return;
-
-                await _db.update('scores', { retard_valide: true }, [`id=eq.${user.id}`]);
-                await _db.insert('logs', { name: nom, points_gagnes: 0, type: 'rattrapage' });
-
-                showToast(`✅ ${nom} — Rattrapage validé ! Tâche de la semaine débloquée.`);
+                await dbUpdate('scores', { retard_valide: true }, ['id=eq.' + user.id]);
+                await dbInsert('logs', { name: nom, points_gagnes: 0, type: 'rattrapage' });
+                showToast('✅ ' + nom + ' — Rattrapage validé ! Tâche de la semaine débloquée.');
                 fetchAllData();
-            } catch (e) {
-                console.error('[App] Erreur validerRetard :', e);
-            }
+            } catch(e) { console.error(e); }
         }
 
-        /* ── RÉCUPÉRATION ET AFFICHAGE DES DONNÉES ──────────────────
-           Charge depuis Supabase :
-           - La table scores (triée par points décroissants)
-           - La table logs (10 dernières entrées)
-           Puis met à jour le podium, live activity, cartes et graphique.
-        ──────────────────────────────────────────────────────────── */
+        /* ── FETCH DONNÉES ── */
         async function fetchAllData() {
-            const weekNum = getWeekNumber();
-
-            const { data: users } = await _db.query('scores', '*', [], 'points.desc');
-            const { data: logs }  = await _db.query('logs', '*', [], 'created_at.desc', 10);
+            var weekNum = getWeekNumber();
+            var users = await dbGet('scores', '*', [], 'points.desc');
+            var logs  = await dbGet('logs', '*', [], 'created_at.desc', 10);
 
             if (!users || users.length === 0) return;
 
-            /* ── PODIUM ──────────────────────────────────────────── */
-            document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
-                <div class="flex justify-between items-center py-2 lg:py-3">
-                    <span class="text-xs lg:text-sm font-bold ${i === 0 ? 'text-blue-500' : 'opacity-80'}">
-                        ${i === 0 ? '🥇' : i + 1}. ${u.name}
-                        ${u.tache_en_retard && !u.retard_valide
-                            ? '<span class="text-red-500 text-[8px] ml-1">⚠️ retard</span>'
-                            : ''}
-                    </span>
-                    <span class="font-black text-sm lg:text-xl">
-                        ${u.points} <small class="text-[8px] opacity-40">PTS</small>
-                    </span>
-                </div>`).join('');
+            /* PODIUM */
+            document.getElementById('leaderboard').innerHTML = users.map(function(u, i){
+                var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<span class="text-red-500 text-[8px] ml-1">⚠️ retard</span>' : '';
+                return '<div class="flex justify-between items-center py-2 lg:py-3"><span class="text-xs lg:text-sm font-bold ' + (i===0?'text-blue-500':'opacity-80') + '">' + (i===0?'🥇':i+1) + '. ' + u.name + retardHtml + '</span><span class="font-black text-sm lg:text-xl">' + u.points + ' <small class="text-[8px] opacity-40">PTS</small></span></div>';
+            }).join('');
 
-            /* ── LIVE ACTIVITY ───────────────────────────────────── */
-            /* Labels lisibles pour chaque type d'action */
-            const typeLabel = {
-                validation : '✅ Validation',
-                malus      : '⚠️ Malus admin',
-                malus_auto : '🤖 Malus auto',
-                rattrapage : '🔄 Rattrapage'
-            };
-            document.getElementById('history-logs').innerHTML = (logs || []).map(l => `
-                <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-white">${l.name}</span>
-                        <span class="opacity-40 text-[8px] uppercase font-black">
-                            ${typeLabel[l.type] || l.type}
-                        </span>
-                    </div>
-                    <span class="${l.points_gagnes > 0 ? 'text-green-400' : l.points_gagnes < 0 ? 'text-red-400' : 'text-slate-400'} font-black">
-                        ${l.points_gagnes > 0 ? '+' : ''}${l.points_gagnes} pts
-                    </span>
-                </div>`).join('');
+            /* LIVE ACTIVITY */
+            var typeLabel = { validation:'✅ Validation', malus:'⚠️ Malus admin', malus_auto:'🤖 Malus auto', rattrapage:'🔄 Rattrapage' };
+            document.getElementById('history-logs').innerHTML = (logs || []).map(function(l){
+                var color = l.points_gagnes > 0 ? 'text-green-400' : l.points_gagnes < 0 ? 'text-red-400' : 'text-slate-400';
+                var sign = l.points_gagnes > 0 ? '+' : '';
+                return '<div class="flex justify-between items-center border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white">' + l.name + '</span><span class="opacity-40 text-[8px] uppercase font-black">' + (typeLabel[l.type]||l.type) + '</span></div><span class="' + color + ' font-black">' + sign + l.points_gagnes + ' pts</span></div>';
+            }).join('');
 
-            /* ── PANEL ADMIN — LISTE MALUS ───────────────────────── */
-            document.getElementById('admin-malus-list').innerHTML = users.map(u => `
-                <div class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl mb-2 text-xs">
-                    <div class="text-left">
-                        <span class="font-bold">${u.name} (${u.points} pts)</span>
-                        ${u.tache_en_retard && !u.retard_valide
-                            ? `<p class="text-red-500 text-[9px]">⚠️ Retard S${u.tache_en_retard}</p>`
-                            : ''}
-                    </div>
-                    <button onclick="applyMalus('${u.id}', '${u.name}', ${u.points})"
-                        class="bg-orange-600 text-white px-4 py-1 rounded-lg">
-                        -2 PTS
-                    </button>
-                </div>`).join('');
+            /* ADMIN LIST */
+            document.getElementById('admin-malus-list').innerHTML = users.map(function(u){
+                var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<p class="text-red-500 text-[9px]">⚠️ Retard S' + u.tache_en_retard + '</p>' : '';
+                return '<div class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl mb-2 text-xs"><div class="text-left"><span class="font-bold">' + u.name + ' (' + u.points + ' pts)</span>' + retardHtml + '</div><button onclick="applyMalus(\'' + u.id + '\',\'' + u.name + '\',' + u.points + ')" class="bg-orange-600 text-white px-4 py-1 rounded-lg">-2 PTS</button></div>';
+            }).join('');
 
-            /* ── CARTES MISSIONS + GRAPHIQUE ─────────────────────── */
             renderTasks(users);
             renderChart(users);
         }
 
-        /* ── GRAPHIQUE EN BARRES ────────────────────────────────────
-           Affiche les scores de tous les colocataires.
-           S'adapte au thème clair/sombre automatiquement.
-        ──────────────────────────────────────────────────────────── */
+        /* ── GRAPHIQUE ── */
         function renderChart(users) {
-            const ctx    = document.getElementById('scoreChart').getContext('2d');
-            const isDark = document.documentElement.classList.contains('dark');
-
-            if (myChart) myChart.destroy(); /* évite les doublons */
-
+            var ctx = document.getElementById('scoreChart').getContext('2d');
+            var isDark = document.documentElement.classList.contains('dark');
+            if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels  : users.map(u => u.name),
-                    datasets: [{
-                        data           : users.map(u => u.points),
-                        backgroundColor: '#3b82f6',
-                        borderRadius   : 6
-                    }]
+                    labels: users.map(function(u){ return u.name; }),
+                    datasets: [{ data: users.map(function(u){ return u.points; }), backgroundColor: '#3b82f6', borderRadius: 6 }]
                 },
                 options: {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid : { color: isDark ? '#1e293b' : '#f1f5f9' },
-                            ticks: { color: isDark ? '#64748b' : '#94a3b8', font: { size: 9 } }
-                        },
-                        x: {
-                            grid : { display: false },
-                            ticks: { color: isDark ? '#64748b' : '#94a3b8', font: { size: 9 } }
-                        }
+                        y: { beginAtZero: true, grid: { color: isDark?'#1e293b':'#f1f5f9' }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } }
                     }
                 }
             });
         }
 
-        /* ── VALIDER UNE MISSION (AJOUTER DES POINTS) ───────────────
-           1. Vérifie que l'utilisateur n'a pas déjà validé cette semaine
-           2. Vérifie qu'il n'a pas de retard en cours non résolu
-           3. Calcule les points (5 pour le 1er, 4 pour le 2e, ... 1 minimum)
-           4. Met à jour Supabase + ajoute un log
-           5. Si le retard était rattrapé → nettoie les colonnes retard
-        ──────────────────────────────────────────────────────────── */
+        /* ── AJOUTER POINTS ── */
         async function addPoints(nom, btn) {
-            const weekNum = getWeekNumber();
+            var weekNum = getWeekNumber();
             try {
-                const { data: all } = await _db.query('scores', '*');
-                const user = all.find(u => u.name === nom);
+                var all = await dbGet('scores', '*');
+                var user = all.find(function(u){ return u.name === nom; });
                 if (!user) return;
-
-                /* Déjà validé cette semaine */
                 if (user.last_week_validated === weekNum) return;
-
-                /* Retard non résolu → bloque la validation */
                 if (user.tache_en_retard && !user.retard_valide) {
-                    showToast(`⛔ ${nom} doit d'abord rattraper sa tâche en retard !`);
+                    showToast('⛔ ' + nom + ' doit d\'abord rattraper sa tâche en retard !');
                     return;
                 }
-
-                /* Points décroissants selon l'ordre de validation */
-                const déjàValidésCetteSemaine = all.filter(u => u.last_week_validated === weekNum).length;
-                const pts = Math.max(1, 5 - déjàValidésCetteSemaine);
-
-                /* Si retard rattrapé → on nettoie les colonnes retard */
-                const updateData = {
-                    points              : user.points + pts,
-                    last_week_validated : weekNum,
-                    ...(user.retard_valide ? { tache_en_retard: null, retard_valide: false } : {})
-                };
-
-                await _db.update('scores', updateData, [`id=eq.${user.id}`]);
-                await _db.insert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
-
-                showToast(`✅ ${nom} — +${pts} point${pts > 1 ? 's' : ''} !`);
+                var dejaCetteSemaine = all.filter(function(u){ return u.last_week_validated === weekNum; }).length;
+                var pts = Math.max(1, 5 - dejaCetteSemaine);
+                var updateData = { points: user.points + pts, last_week_validated: weekNum };
+                if (user.retard_valide) { updateData.tache_en_retard = null; updateData.retard_valide = false; }
+                await dbUpdate('scores', updateData, ['id=eq.' + user.id]);
+                await dbInsert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
+                showToast('✅ ' + nom + ' — +' + pts + ' point' + (pts>1?'s':'') + ' !');
                 fetchAllData();
-            } catch (e) {
-                console.error('[App] Erreur addPoints :', e);
-            }
+            } catch(e) { console.error(e); }
         }
 
-        /* ── MALUS MANUEL (ADMIN) ───────────────────────────────────
-           Retire 2 points à un colocataire (jamais en dessous de 0).
-           Demande confirmation avant d'exécuter.
-        ──────────────────────────────────────────────────────────── */
+        /* ── MALUS MANUEL ── */
         async function applyMalus(id, nom, current) {
-            if (!confirm(`Punir ${nom} (-2 pts) ?`)) return;
-            const newPts = Math.max(0, current - 2);
-            await _db.update('scores', { points: newPts }, [`id=eq.${id}`]);
-            await _db.insert('logs', { name: nom, points_gagnes: -2, type: 'malus' });
-            showToast(`⚠️ Malus appliqué à ${nom}`);
+            if (!confirm('Punir ' + nom + ' (-2 pts) ?')) return;
+            var newPts = Math.max(0, current - 2);
+            await dbUpdate('scores', { points: newPts }, ['id=eq.' + id]);
+            await dbInsert('logs', { name: nom, points_gagnes: -2, type: 'malus' });
+            showToast('⚠️ Malus appliqué à ' + nom);
             fetchAllData();
         }
 
-        /* ── RESET MENSUEL (ADMIN) ──────────────────────────────────
-           Remet tous les scores à 0, efface les retards et vide les logs.
-           Double confirmation pour éviter les fausses manœuvres.
-        ──────────────────────────────────────────────────────────── */
+        /* ── RESET ── */
         async function resetAllScores() {
-            if (!confirm("🚨 Pakito, confirmes-tu le Reset Total du mois ?")) return;
-            await _db.update('scores', { points: 0, last_week_validated: 0, tache_en_retard: null, retard_valide: false }, ['id=neq.0']);
-            await _db.delete('logs', ['id=neq.0']);
+            if (!confirm('🚨 Pakito, confirmes-tu le Reset Total du mois ?')) return;
+            await dbUpdate('scores', { points: 0, last_week_validated: 0, tache_en_retard: null, retard_valide: false }, ['id=neq.0']);
+            await dbDelete('logs', ['id=neq.0']);
             location.reload();
         }
 
-        /* ── SERVICE WORKER & NOTIFICATIONS ────────────────────────
-           Enregistre sw.js pour les alertes automatiques du dimanche.
-           Démarre la boucle de vérification en arrière-plan.
-        ──────────────────────────────────────────────────────────── */
+        /* ── SERVICE WORKER ── */
         async function initServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
             try {
-                const reg = await navigator.serviceWorker.register('/sw.js');
-                /* Démarre la boucle de vérification dans le SW */
-                const sw = reg.active || reg.installing || reg.waiting;
+                var reg = await navigator.serviceWorker.register('/sw.js');
+                var sw = reg.active || reg.installing || reg.waiting;
                 if (sw) sw.postMessage({ type: 'SCHEDULE_CHECKS' });
                 updateNotifStatusUI();
-            } catch (err) {
-                console.error('[SW] Enregistrement échoué :', err);
-            }
+            } catch(err) { console.error('[SW]', err); }
         }
 
-        /* ── DEMANDE DE PERMISSION NOTIFICATIONS ────────────────────
-           Appelée par le bouton ACTIVER de la bannière.
-           Affiche la popup native du navigateur.
-        ──────────────────────────────────────────────────────────── */
         async function requestNotificationPermission() {
-            if (!('Notification' in window)) {
-                showToast('❌ Notifications non supportées sur ce navigateur');
-                return;
-            }
-            const permission = await Notification.requestPermission();
+            if (!('Notification' in window)) { showToast('❌ Notifications non supportées'); return; }
+            var permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 dismissBanner();
                 updateNotifStatusUI();
-                showToast('🔔 Notifications activées ! Rappels dim. 15h, 20h, 23h30.');
+                showToast('🔔 Notifications activées !');
                 initServiceWorker();
             } else {
-                showToast('❌ Notifications refusées — activez-les dans les paramètres');
+                showToast('❌ Notifications refusées');
             }
         }
 
-        /* ── MISE À JOUR DE L'ICÔNE NOTIFICATIONS ───────────────────
-           🔔 si accordées, 🔕 si refusées ou en attente.
-        ──────────────────────────────────────────────────────────── */
         function updateNotifStatusUI() {
-            const icon = document.getElementById('notif-status');
+            if (!('Notification' in window)) return;
+            var icon = document.getElementById('notif-status');
             icon.classList.remove('hidden');
             icon.textContent = Notification.permission === 'granted' ? '🔔' : '🔕';
             icon.title = Notification.permission === 'granted'
-                ? 'Notifications actives — Rappels dim. 15h, 20h, 23h30 + malus 23h59'
+                ? 'Notifications actives — dim. 15h, 20h, 23h30 + malus 23h59'
                 : 'Notifications inactives — cliquez pour activer';
         }
 
         function showNotifInfo() {
-            if (Notification.permission === 'granted') {
-                showToast('🔔 Actives — Rappels dim. 15h / 20h / 23h30 + malus auto 23h59');
-            } else {
-                requestNotificationPermission();
-            }
+            if (Notification.permission === 'granted') showToast('🔔 Actives — dim. 15h / 20h / 23h30 + malus 23h59');
+            else requestNotificationPermission();
         }
 
-        /* ── BANNIÈRE NOTIFICATIONS ─────────────────────────────────
-           Apparaît au 1er chargement si pas encore acceptées.
-           Mémorise le rejet dans localStorage.
-        ──────────────────────────────────────────────────────────── */
         function dismissBanner() {
-            const b = document.getElementById('notif-banner');
-            b.style.opacity   = '0';
-            b.style.transform = 'translateY(-100%)';
-            setTimeout(() => b.classList.add('hidden'), 300);
+            var b = document.getElementById('notif-banner');
+            b.style.opacity = '0'; b.style.transform = 'translateY(-100%)';
+            setTimeout(function(){ b.classList.add('hidden'); }, 300);
             localStorage.setItem('notif-banner-dismissed', '1');
         }
 
@@ -908,33 +391,19 @@
             if (!('Notification' in window)) return;
             if (Notification.permission === 'granted') return;
             if (localStorage.getItem('notif-banner-dismissed')) return;
-            setTimeout(() => document.getElementById('notif-banner').classList.remove('hidden'), 1500);
+            setTimeout(function(){ document.getElementById('notif-banner').classList.remove('hidden'); }, 1500);
         }
 
-        /* ── TEST NOTIFICATION (BOUTON ADMIN) ───────────────────────
-           Envoie immédiatement une notification pour vérifier
-           que tout fonctionne, sans attendre le dimanche.
-        ──────────────────────────────────────────────────────────── */
         async function sendTestNotification() {
-            if (Notification.permission !== 'granted') {
-                await requestNotificationPermission();
-                return;
-            }
-            const weekNum     = getWeekNumber();
-            const { data: u } = await _db.query('scores', 'name,last_week_validated');
-            const nonValides  = (u || []).filter(x => x.last_week_validated !== weekNum).map(x => x.name);
-            const reg         = await navigator.serviceWorker.getRegistration();
+            if (Notification.permission !== 'granted') { await requestNotificationPermission(); return; }
+            var weekNum = getWeekNumber();
+            var u = await dbGet('scores', 'name,last_week_validated');
+            var nonValides = (u || []).filter(function(x){ return x.last_week_validated !== weekNum; }).map(function(x){ return x.name; });
+            var reg = await navigator.serviceWorker.getRegistration();
             if (!reg) { showToast('❌ Service Worker non disponible'); return; }
-
             reg.showNotification(
                 nonValides.length === 0 ? '✅ Tout le monde a validé !' : '🔔 Test — Missions en attente',
-                {
-                    body   : nonValides.length === 0
-                        ? 'Bravo l\'équipe ! 🎉'
-                        : `${nonValides.join(', ')} n'ont pas encore validé.`,
-                    icon   : '/icon-192.png',
-                    vibrate: [200, 100, 200]
-                }
+                { body: nonValides.length === 0 ? 'Bravo l\'équipe ! 🎉' : nonValides.join(', ') + ' n\'ont pas encore validé.', icon: '/icon-192.png', vibrate: [200,100,200] }
             );
             showToast('🔔 Notification test envoyée !');
         }
@@ -944,70 +413,37 @@
             document.getElementById('admin-panel').classList.add('hidden');
         }
 
-        /* ── MODE SOMBRE / CLAIR ────────────────────────────────────
-           Bascule la classe "dark" sur <html>.
-           Mémorise le choix dans localStorage.
-        ──────────────────────────────────────────────────────────── */
+        /* ── MODE SOMBRE ── */
         function toggleDarkMode() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
+            var html = document.documentElement;
+            var icon = document.getElementById('theme-icon');
             if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-                icon.innerText = "🌞";
+                html.classList.remove('dark'); localStorage.setItem('theme','light'); icon.innerText = "🌞";
             } else {
-                html.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-                icon.innerText = "🌙";
+                html.classList.add('dark'); localStorage.setItem('theme','dark'); icon.innerText = "🌙";
             }
-            /* Recrée le graphique pour adapter les couleurs */
             if (myChart) renderChart([]);
         }
 
-        /* ── ACCÈS ADMIN PAR 5 CLICS ────────────────────────────────
-           Mécanisme discret : 5 clics rapides sur le titre ouvrent
-           le panel admin. Invisible pour les non-initiés.
-        ──────────────────────────────────────────────────────────── */
-        let adminClicks = 0;
-        document.getElementById('admin-trigger').onclick = () => {
-            if (++adminClicks === 5) {
-                document.getElementById('admin-panel').classList.remove('hidden');
-                adminClicks = 0;
-            }
+        /* ── ADMIN 5 CLICS ── */
+        var adminClicks = 0;
+        document.getElementById('admin-trigger').onclick = function() {
+            if (++adminClicks === 5) { document.getElementById('admin-panel').classList.remove('hidden'); adminClicks = 0; }
         };
 
-        /* ── INITIALISATION ─────────────────────────────────────────
-           Point d'entrée principal appelé au chargement de la page.
-           1. Applique le thème mémorisé
-           2. Affiche le numéro de semaine
-           3. Lance le Service Worker (alertes automatiques)
-           4. Vérifie si la bannière notifs doit apparaître
-           5. Charge les données depuis Supabase
-        ──────────────────────────────────────────────────────────── */
+        /* ── INIT ── */
         function init() {
-            /* Restaure le thème préféré */
             if (localStorage.getItem('theme') === 'dark') {
                 document.documentElement.classList.add('dark');
                 document.getElementById('theme-icon').innerText = "🌙";
             }
-
-            /* Affiche le numéro de semaine dans le header */
-            document.getElementById('week-info').innerText = `Semaine n°${getWeekNumber()}`;
-
-            /* Démarre le Service Worker pour les alertes */
+            document.getElementById('week-info').innerText = 'Semaine n°' + getWeekNumber();
             initServiceWorker();
-
-            /* Met à jour l'icône notification */
             updateNotifStatusUI();
-
-            /* Vérifie si la bannière doit s'afficher */
             checkShowBanner();
-
-            /* Charge toutes les données depuis Supabase */
             fetchAllData();
         }
 
-        /* Lance l'app */
         init();
     </script>
 </body>

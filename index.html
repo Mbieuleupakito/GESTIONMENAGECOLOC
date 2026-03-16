@@ -373,40 +373,26 @@
            FONCTIONS DE TEST ADMIN
         ══════════════════════════════════════════════════════════ */
 
-        /* ── HELPER : récupère le SW actif ou attend qu'il soit prêt ── */
-        function getSW() {
-            return navigator.serviceWorker.ready.then(function(reg) {
-                swReg = reg;
-                return reg;
-            });
-        }
+        /* ── TESTS ALARMES : utilise l'API Notification directement ── */
 
-        /* Test alarme dimanche */
         function testAlarme() {
             if (Notification.permission !== 'granted') {
                 requestNotificationPermission();
                 return;
             }
-            getSW().then(function(reg) {
-                /* Envoie message au SW pour notification avec vibration */
-                if (reg.active) {
-                    reg.active.postMessage({ type: 'TEST_ALARM' });
-                    showToast('🚨 Alarme test envoyée !');
-                } else {
-                    /* Fallback direct si SW pas encore actif */
-                    reg.showNotification('🚨 TEST ALARME — Admin', {
-                        body: 'Ceci est un test de l\'alarme du dimanche.',
-                        icon: '/icon-192.png',
-                        vibrate: [500,200,500,200,500,200,1000],
-                        requireInteraction: true,
-                        silent: false
-                    });
-                    showToast('🚨 Alarme test envoyée !');
-                }
-            }).catch(function() { showToast('❌ Active les notifications d\'abord !'); });
+            /* API Notification directe — fonctionne sans SW */
+            var n = new Notification('🚨 TEST ALARME — Dimanche', {
+                body: 'Ceci est un test de l\'alarme. Vibration longue + son.',
+                icon: '/icon-192.png',
+                vibrate: [500,200,500,200,500,200,1000],
+                requireInteraction: true,
+                silent: false
+            });
+            showToast('🚨 Alarme test envoyée !');
+            /* Ferme après 8 secondes */
+            setTimeout(function(){ n.close(); }, 8000);
         }
 
-        /* Test notification validation */
         function testValidation() {
             if (Notification.permission !== 'granted') {
                 requestNotificationPermission();
@@ -414,22 +400,16 @@
             }
             var weekNum = getWeekNumber();
             var mission = getMissionForWeek(colocs.indexOf('PAKITO'), weekNum);
-            getSW().then(function(reg) {
-                if (reg.active) {
-                    reg.active.postMessage({ type: 'TEST_VALIDATION', nom: 'PAKITO', mission: mission });
-                } else {
-                    reg.showNotification('✅ PAKITO a validé sa tâche !', {
-                        body: mission + ' — C\'est fait cette semaine 💪',
-                        icon: '/icon-192.png',
-                        vibrate: [100,50,100],
-                        silent: false
-                    });
-                }
-                showToast('✅ Notif validation test envoyée !');
-            }).catch(function() { showToast('❌ Active les notifications d\'abord !'); });
+            var n = new Notification('✅ PAKITO a validé sa tâche !', {
+                body: mission + ' — C\'est fait cette semaine 💪',
+                icon: '/icon-192.png',
+                vibrate: [100,50,100],
+                silent: false
+            });
+            showToast('✅ Notif validation test envoyée !');
+            setTimeout(function(){ n.close(); }, 5000);
         }
 
-        /* Test rappel non-validés */
         function testRappel() {
             if (Notification.permission !== 'granted') {
                 requestNotificationPermission();
@@ -438,18 +418,16 @@
             var weekNum = getWeekNumber();
             dbGet('scores', 'name,last_week_validated').then(function(users) {
                 var nonValides = (users || []).filter(function(u){ return u.last_week_validated !== weekNum; }).map(function(u){ return u.name; });
-                getSW().then(function(reg) {
-                    reg.showNotification(
-                        nonValides.length === 0 ? '✅ Tout le monde a validé !' : '🔔 Rappel — Missions en attente',
-                        {
-                            body: nonValides.length === 0 ? 'Bravo l\'équipe ! 🎉' : nonValides.join(', ') + ' n\'ont pas encore validé.',
-                            icon: '/icon-192.png',
-                            vibrate: [200,100,200],
-                            silent: false
-                        }
-                    );
-                    showToast('🔔 Rappel test envoyé !');
-                }).catch(function() { showToast('❌ Active les notifications d\'abord !'); });
+                var title = nonValides.length === 0 ? '✅ Tout le monde a validé !' : '🔔 Rappel — Missions en attente';
+                var body  = nonValides.length === 0 ? 'Bravo l\'équipe ! 🎉' : nonValides.join(', ') + ' n\'ont pas encore validé.';
+                var n = new Notification(title, {
+                    body: body,
+                    icon: '/icon-192.png',
+                    vibrate: [200,100,200],
+                    silent: false
+                });
+                showToast('🔔 Rappel test envoyé !');
+                setTimeout(function(){ n.close(); }, 5000);
             });
         }
 

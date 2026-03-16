@@ -39,14 +39,15 @@
         #toast{transition:opacity .3s ease,transform .3s ease}
     </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-theme flex flex-col" id="app-body">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-theme flex flex-col">
 
+    <!-- BANNIÈRE NOTIFICATIONS -->
     <div id="notif-banner" class="hidden bg-blue-600 text-white px-4 py-3 flex items-center justify-between gap-3 shrink-0 z-40">
         <div class="flex items-center gap-3">
             <span class="text-xl">🔔</span>
             <div>
                 <p class="font-bold text-sm">Activer les rappels de mission</p>
-                <p class="text-xs opacity-80">Recevez une alerte le dimanche si votre tâche n'est pas validée</p>
+                <p class="text-xs opacity-80">Recevez une alerte le dimanche + quand un coloc valide</p>
             </div>
         </div>
         <div class="flex gap-2 shrink-0">
@@ -55,6 +56,7 @@
         </div>
     </div>
 
+    <!-- HEADER -->
     <header class="bg-blue-700 text-white px-6 py-4 shadow-2xl z-50 flex justify-between items-center shrink-0">
         <div class="flex flex-col">
             <h1 id="admin-trigger" class="text-xl lg:text-2xl font-black italic tracking-tighter cursor-pointer select-none">🏠 GESTION APPART 48</h1>
@@ -68,6 +70,7 @@
         </div>
     </header>
 
+    <!-- MAIN -->
     <main id="main-grid" class="max-w-[1800px] mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
         <div id="col-missions" class="lg:col-span-7">
             <div class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 h-full flex flex-col">
@@ -98,80 +101,97 @@
         </div>
     </main>
 
+    <!-- FOOTER -->
     <footer class="bg-white/50 dark:bg-slate-950/50 backdrop-blur-md py-3 text-center border-t border-slate-200 dark:border-slate-800 shrink-0">
         <p class="text-slate-400 font-bold uppercase tracking-[0.3em] text-[8px] lg:text-[10px]">© 2026 Honoré Mbieleu Pakito | Tous droits réservés</p>
     </footer>
 
+    <!-- PANEL ADMIN -->
     <div id="admin-panel" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[3rem] shadow-2xl text-center border-2 border-red-500">
-            <h3 class="text-red-600 font-black mb-6 uppercase italic">👑 Pakito Admin Mode</h3>
-            <div id="admin-malus-list" class="space-y-2 mb-4 max-h-[250px] overflow-y-auto pr-2"></div>
-            <button onclick="adminSendAlert()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-4">🔔 Envoyer alerte maintenant</button>
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md p-6 rounded-[3rem] shadow-2xl text-center border-2 border-red-500 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-red-600 font-black mb-4 uppercase italic">👑 Pakito Admin Mode</h3>
+
+            <!-- MALUS LISTE -->
+            <div id="admin-malus-list" class="space-y-2 mb-4 max-h-[200px] overflow-y-auto pr-2"></div>
+
+            <!-- SECTION TESTS ALARMES -->
+            <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
+                <p class="text-[9px] font-black text-red-500 uppercase tracking-widest mb-3">🧪 Tests Alarmes</p>
+                <div class="space-y-2">
+                    <button onclick="testAlarme()" class="w-full bg-red-600 text-white py-2 rounded-xl font-bold text-xs">
+                        🚨 Tester l'alarme dimanche
+                    </button>
+                    <button onclick="testValidation()" class="w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs">
+                        ✅ Tester notification validation
+                    </button>
+                    <button onclick="testRappel()" class="w-full bg-orange-500 text-white py-2 rounded-xl font-bold text-xs">
+                        🔔 Tester rappel non-validés
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOUTONS FERMER / RESET -->
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold">Fermer</button>
-                <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold">RESET MOIS</button>
+                <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold text-sm">Fermer</button>
+                <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold text-sm">RESET MOIS</button>
             </div>
         </div>
     </div>
 
+    <!-- TOAST -->
     <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold max-w-xs text-center"></div>
 
     <script>
         /* ── CONFIG ── */
-        const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
-        const HEADERS = {
+        var SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
+        var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
+        var HEADERS = {
             'apikey': SUPABASE_KEY,
             'Authorization': 'Bearer ' + SUPABASE_KEY,
             'Content-Type': 'application/json'
         };
 
-        /* ── FONCTIONS FETCH SUPABASE ── */
-        async function dbGet(table, cols, filters, order, limit) {
+        /* ── FETCH SUPABASE ── */
+        function dbGet(table, cols, filters, order, limit) {
             try {
-                let url = SUPABASE_URL + '/rest/v1/' + table + '?select=' + (cols || '*');
+                var url = SUPABASE_URL + '/rest/v1/' + table + '?select=' + (cols || '*');
                 if (filters) filters.forEach(function(f){ url += '&' + f; });
                 if (order) url += '&order=' + order;
                 if (limit) url += '&limit=' + limit;
-                const res = await fetch(url, { headers: HEADERS });
-                if (!res.ok) { console.error('dbGet error', res.status); return []; }
-                const data = await res.json();
-                return Array.isArray(data) ? data : [];
-            } catch(e) { console.error('dbGet catch', e); return []; }
+                return fetch(url, { headers: HEADERS })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) { return Array.isArray(data) ? data : []; })
+                    .catch(function(e) { console.error('dbGet', e); return []; });
+            } catch(e) { return Promise.resolve([]); }
         }
 
-        async function dbUpdate(table, obj, filters) {
-            try {
-                let url = SUPABASE_URL + '/rest/v1/' + table;
-                if (filters && filters.length) url += '?' + filters.join('&');
-                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
-                await fetch(url, { method: 'PATCH', headers: h, body: JSON.stringify(obj) });
-            } catch(e) { console.error('dbUpdate catch', e); }
+        function dbUpdate(table, obj, filters) {
+            var url = SUPABASE_URL + '/rest/v1/' + table;
+            if (filters && filters.length) url += '?' + filters.join('&');
+            var h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+            return fetch(url, { method: 'PATCH', headers: h, body: JSON.stringify(obj) }).catch(function(e){ console.error('dbUpdate', e); });
         }
 
-        async function dbInsert(table, obj) {
-            try {
-                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
-                await fetch(SUPABASE_URL + '/rest/v1/' + table, {
-                    method: 'POST', headers: h,
-                    body: JSON.stringify(Array.isArray(obj) ? obj[0] : obj)
-                });
-            } catch(e) { console.error('dbInsert catch', e); }
+        function dbInsert(table, obj) {
+            var h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+            return fetch(SUPABASE_URL + '/rest/v1/' + table, {
+                method: 'POST', headers: h,
+                body: JSON.stringify(Array.isArray(obj) ? obj[0] : obj)
+            }).catch(function(e){ console.error('dbInsert', e); });
         }
 
-        async function dbDelete(table, filters) {
-            try {
-                let url = SUPABASE_URL + '/rest/v1/' + table;
-                if (filters && filters.length) url += '?' + filters.join('&');
-                const h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
-                await fetch(url, { method: 'DELETE', headers: h });
-            } catch(e) { console.error('dbDelete catch', e); }
+        function dbDelete(table, filters) {
+            var url = SUPABASE_URL + '/rest/v1/' + table;
+            if (filters && filters.length) url += '?' + filters.join('&');
+            var h = Object.assign({}, HEADERS, { 'Prefer': 'return=minimal' });
+            return fetch(url, { method: 'DELETE', headers: h }).catch(function(e){ console.error('dbDelete', e); });
         }
 
         /* ── DONNÉES STATIQUES ── */
         var colocs  = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
         var missions = ["🚿 Douche Gauche", "🚽 WC Droit", "🧻 WC Gauche", "🧹 Cuisine + Salon", "🚿 Douche Droite"];
         var myChart;
+        var swReg = null; /* Référence au Service Worker */
 
         /* ── TOAST ── */
         function showToast(msg, duration) {
@@ -204,7 +224,7 @@
             return missions[(colocIndex + weekNum) % missions.length];
         }
 
-        /* ── RENDU DES CARTES ── */
+        /* ── RENDU CARTES ── */
         function renderTasks(users) {
             var week = getWeekNumber();
             var container = document.getElementById('tasks-container');
@@ -226,56 +246,54 @@
                     var dejàValidé = user.last_week_validated === week;
                     var rattrapéHtml = retardRattrapé ? '<p class="text-[8px] text-green-500 font-bold mt-0.5">✅ Retard S' + user.tache_en_retard + ' rattrapé !</p>' : '';
                     var btnClass = dejàValidé ? 'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold' : 'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg active:scale-95 transition-all';
-                    var btnDisabled = dejàValidé ? 'disabled' : '';
-                    var btnText = dejàValidé ? '✅' : 'VALIDER';
-                    container.innerHTML += '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center"><div class="leading-tight"><p class="text-[8px] lg:text-[10px] font-black text-blue-500 uppercase tracking-widest">' + nom + '</p><p class="font-bold text-xs lg:text-base dark:text-white">' + missionCourante + '</p>' + rattrapéHtml + '</div><button data-name="' + nom + '" onclick="addPoints(\'' + nom + '\', this)" class="' + btnClass + '" ' + btnDisabled + '>' + btnText + '</button></div>';
+                    container.innerHTML += '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center"><div class="leading-tight"><p class="text-[8px] lg:text-[10px] font-black text-blue-500 uppercase tracking-widest">' + nom + '</p><p class="font-bold text-xs lg:text-base dark:text-white">' + missionCourante + '</p>' + rattrapéHtml + '</div><button data-name="' + nom + '" onclick="addPoints(\'' + nom + '\', this)" class="' + btnClass + '" ' + (dejàValidé?'disabled':'') + '>' + (dejàValidé?'✅':'VALIDER') + '</button></div>';
                 }
             });
         }
 
         /* ── VALIDER RETARD ── */
-        async function validerRetard(nom, btn) {
-            try {
-                var all = await dbGet('scores', '*');
+        function validerRetard(nom, btn) {
+            dbGet('scores', '*').then(function(all) {
                 var user = all.find(function(u){ return u.name === nom; });
                 if (!user || user.retard_valide) return;
-                await dbUpdate('scores', { retard_valide: true }, ['id=eq.' + user.id]);
-                await dbInsert('logs', { name: nom, points_gagnes: 0, type: 'rattrapage' });
-                showToast('✅ ' + nom + ' — Rattrapage validé ! Tâche de la semaine débloquée.');
-                fetchAllData();
-            } catch(e) { console.error(e); }
+                dbUpdate('scores', { retard_valide: true }, ['id=eq.' + user.id]).then(function() {
+                    dbInsert('logs', { name: nom, points_gagnes: 0, type: 'rattrapage' });
+                    showToast('✅ ' + nom + ' — Rattrapage validé !');
+                    fetchAllData();
+                });
+            });
         }
 
         /* ── FETCH DONNÉES ── */
-        async function fetchAllData() {
+        function fetchAllData() {
             var weekNum = getWeekNumber();
-            var users = await dbGet('scores', '*', [], 'points.desc');
-            var logs  = await dbGet('logs', '*', [], 'created_at.desc', 10);
+            dbGet('scores', '*', [], 'points.desc').then(function(users) {
+                if (!users || users.length === 0) return;
+                dbGet('logs', '*', [], 'created_at.desc', 10).then(function(logs) {
 
-            if (!users || users.length === 0) return;
+                    /* PODIUM */
+                    document.getElementById('leaderboard').innerHTML = users.map(function(u, i){
+                        var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<span class="text-red-500 text-[8px] ml-1">⚠️ retard</span>' : '';
+                        return '<div class="flex justify-between items-center py-2 lg:py-3"><span class="text-xs lg:text-sm font-bold ' + (i===0?'text-blue-500':'opacity-80') + '">' + (i===0?'🥇':i+1) + '. ' + u.name + retardHtml + '</span><span class="font-black text-sm lg:text-xl">' + u.points + ' <small class="text-[8px] opacity-40">PTS</small></span></div>';
+                    }).join('');
 
-            /* PODIUM */
-            document.getElementById('leaderboard').innerHTML = users.map(function(u, i){
-                var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<span class="text-red-500 text-[8px] ml-1">⚠️ retard</span>' : '';
-                return '<div class="flex justify-between items-center py-2 lg:py-3"><span class="text-xs lg:text-sm font-bold ' + (i===0?'text-blue-500':'opacity-80') + '">' + (i===0?'🥇':i+1) + '. ' + u.name + retardHtml + '</span><span class="font-black text-sm lg:text-xl">' + u.points + ' <small class="text-[8px] opacity-40">PTS</small></span></div>';
-            }).join('');
+                    /* LIVE ACTIVITY */
+                    var typeLabel = { validation:'✅ Validation', malus:'⚠️ Malus admin', malus_auto:'🤖 Malus auto', rattrapage:'🔄 Rattrapage' };
+                    document.getElementById('history-logs').innerHTML = (logs || []).map(function(l){
+                        var color = l.points_gagnes > 0 ? 'text-green-400' : l.points_gagnes < 0 ? 'text-red-400' : 'text-slate-400';
+                        return '<div class="flex justify-between items-center border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white">' + l.name + '</span><span class="opacity-40 text-[8px] uppercase font-black">' + (typeLabel[l.type]||l.type) + '</span></div><span class="' + color + ' font-black">' + (l.points_gagnes>0?'+':'') + l.points_gagnes + ' pts</span></div>';
+                    }).join('');
 
-            /* LIVE ACTIVITY */
-            var typeLabel = { validation:'✅ Validation', malus:'⚠️ Malus admin', malus_auto:'🤖 Malus auto', rattrapage:'🔄 Rattrapage' };
-            document.getElementById('history-logs').innerHTML = (logs || []).map(function(l){
-                var color = l.points_gagnes > 0 ? 'text-green-400' : l.points_gagnes < 0 ? 'text-red-400' : 'text-slate-400';
-                var sign = l.points_gagnes > 0 ? '+' : '';
-                return '<div class="flex justify-between items-center border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white">' + l.name + '</span><span class="opacity-40 text-[8px] uppercase font-black">' + (typeLabel[l.type]||l.type) + '</span></div><span class="' + color + ' font-black">' + sign + l.points_gagnes + ' pts</span></div>';
-            }).join('');
+                    /* ADMIN */
+                    document.getElementById('admin-malus-list').innerHTML = users.map(function(u){
+                        var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<p class="text-red-500 text-[9px]">⚠️ Retard S' + u.tache_en_retard + '</p>' : '';
+                        return '<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-3 rounded-2xl text-xs"><div class="text-left"><span class="font-bold">' + u.name + ' (' + u.points + ' pts)</span>' + retardHtml + '</div><button onclick="applyMalus(\'' + u.id + '\',\'' + u.name + '\',' + u.points + ')" class="bg-orange-600 text-white px-3 py-1 rounded-lg">-2 PTS</button></div>';
+                    }).join('');
 
-            /* ADMIN LIST */
-            document.getElementById('admin-malus-list').innerHTML = users.map(function(u){
-                var retardHtml = (u.tache_en_retard && !u.retard_valide) ? '<p class="text-red-500 text-[9px]">⚠️ Retard S' + u.tache_en_retard + '</p>' : '';
-                return '<div class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl mb-2 text-xs"><div class="text-left"><span class="font-bold">' + u.name + ' (' + u.points + ' pts)</span>' + retardHtml + '</div><button onclick="applyMalus(\'' + u.id + '\',\'' + u.name + '\',' + u.points + ')" class="bg-orange-600 text-white px-4 py-1 rounded-lg">-2 PTS</button></div>';
-            }).join('');
-
-            renderTasks(users);
-            renderChart(users);
+                    renderTasks(users);
+                    renderChart(users);
+                });
+            });
         }
 
         /* ── GRAPHIQUE ── */
@@ -285,26 +303,18 @@
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: users.map(function(u){ return u.name; }),
-                    datasets: [{ data: users.map(function(u){ return u.points; }), backgroundColor: '#3b82f6', borderRadius: 6 }]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: isDark?'#1e293b':'#f1f5f9' }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } },
-                        x: { grid: { display: false }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } }
-                    }
-                }
+                data: { labels: users.map(function(u){ return u.name; }), datasets: [{ data: users.map(function(u){ return u.points; }), backgroundColor: '#3b82f6', borderRadius: 6 }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: {
+                    y: { beginAtZero: true, grid: { color: isDark?'#1e293b':'#f1f5f9' }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } },
+                    x: { grid: { display: false }, ticks: { color: isDark?'#64748b':'#94a3b8', font: { size: 9 } } }
+                }}
             });
         }
 
-        /* ── AJOUTER POINTS ── */
-        async function addPoints(nom, btn) {
+        /* ── AJOUTER POINTS + NOTIFICATION VALIDATION ── */
+        function addPoints(nom, btn) {
             var weekNum = getWeekNumber();
-            try {
-                var all = await dbGet('scores', '*');
+            dbGet('scores', '*').then(function(all) {
                 var user = all.find(function(u){ return u.name === nom; });
                 if (!user) return;
                 if (user.last_week_validated === weekNum) return;
@@ -316,53 +326,113 @@
                 var pts = Math.max(1, 5 - dejaCetteSemaine);
                 var updateData = { points: user.points + pts, last_week_validated: weekNum };
                 if (user.retard_valide) { updateData.tache_en_retard = null; updateData.retard_valide = false; }
-                await dbUpdate('scores', updateData, ['id=eq.' + user.id]);
-                await dbInsert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
-                showToast('✅ ' + nom + ' — +' + pts + ' point' + (pts>1?'s':'') + ' !');
-                fetchAllData();
-            } catch(e) { console.error(e); }
+
+                dbUpdate('scores', updateData, ['id=eq.' + user.id]).then(function() {
+                    dbInsert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
+                    showToast('✅ ' + nom + ' — +' + pts + ' point' + (pts>1?'s':'') + ' !');
+
+                    /* Envoie notification aux autres colocs */
+                    var colocIndex = colocs.indexOf(nom);
+                    var mission = getMissionForWeek(colocIndex, weekNum);
+                    sendNotifValidation(nom, mission);
+
+                    fetchAllData();
+                });
+            });
+        }
+
+        /* ── ENVOI NOTIF VALIDATION VIA SERVICE WORKER ── */
+        function sendNotifValidation(nom, mission) {
+            if (!swReg) return;
+            var sw = swReg.active;
+            if (!sw) return;
+            sw.postMessage({ type: 'VALIDATION_NOTIF', nom: nom, mission: mission });
         }
 
         /* ── MALUS MANUEL ── */
-        async function applyMalus(id, nom, current) {
+        function applyMalus(id, nom, current) {
             if (!confirm('Punir ' + nom + ' (-2 pts) ?')) return;
             var newPts = Math.max(0, current - 2);
-            await dbUpdate('scores', { points: newPts }, ['id=eq.' + id]);
-            await dbInsert('logs', { name: nom, points_gagnes: -2, type: 'malus' });
-            showToast('⚠️ Malus appliqué à ' + nom);
-            fetchAllData();
+            dbUpdate('scores', { points: newPts }, ['id=eq.' + id]).then(function() {
+                dbInsert('logs', { name: nom, points_gagnes: -2, type: 'malus' });
+                showToast('⚠️ Malus appliqué à ' + nom);
+                fetchAllData();
+            });
         }
 
         /* ── RESET ── */
-        async function resetAllScores() {
+        function resetAllScores() {
             if (!confirm('🚨 Pakito, confirmes-tu le Reset Total du mois ?')) return;
-            await dbUpdate('scores', { points: 0, last_week_validated: 0, tache_en_retard: null, retard_valide: false }, ['id=neq.0']);
-            await dbDelete('logs', ['id=neq.0']);
-            location.reload();
+            dbUpdate('scores', { points: 0, last_week_validated: 0, tache_en_retard: null, retard_valide: false }, ['id=neq.0']).then(function() {
+                dbDelete('logs', ['id=neq.0']);
+                location.reload();
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           FONCTIONS DE TEST ADMIN
+        ══════════════════════════════════════════════════════════ */
+
+        /* Test alarme dimanche */
+        function testAlarme() {
+            if (Notification.permission !== 'granted') { showToast('❌ Active les notifications d\'abord !'); return; }
+            if (!swReg || !swReg.active) { showToast('❌ Service Worker non disponible'); return; }
+            swReg.active.postMessage({ type: 'TEST_ALARM' });
+            showToast('🚨 Alarme test envoyée !');
+        }
+
+        /* Test notification validation */
+        function testValidation() {
+            if (Notification.permission !== 'granted') { showToast('❌ Active les notifications d\'abord !'); return; }
+            if (!swReg || !swReg.active) { showToast('❌ Service Worker non disponible'); return; }
+            var weekNum = getWeekNumber();
+            swReg.active.postMessage({ type: 'TEST_VALIDATION', nom: 'PAKITO', mission: getMissionForWeek(colocs.indexOf('PAKITO'), weekNum) });
+            showToast('✅ Notif validation test envoyée !');
+        }
+
+        /* Test rappel non-validés */
+        function testRappel() {
+            if (Notification.permission !== 'granted') { showToast('❌ Active les notifications d\'abord !'); return; }
+            var weekNum = getWeekNumber();
+            dbGet('scores', 'name,last_week_validated').then(function(users) {
+                var nonValides = (users || []).filter(function(u){ return u.last_week_validated !== weekNum; }).map(function(u){ return u.name; });
+                if (!swReg) { showToast('❌ Service Worker non disponible'); return; }
+                swReg.showNotification(
+                    nonValides.length === 0 ? '✅ Tout le monde a validé !' : '🔔 Rappel — Missions en attente',
+                    {
+                        body: nonValides.length === 0 ? 'Bravo l\'équipe ! 🎉' : nonValides.join(', ') + ' n\'ont pas encore validé.',
+                        icon: '/icon-192.png',
+                        vibrate: [200, 100, 200],
+                        silent: false
+                    }
+                );
+                showToast('🔔 Rappel test envoyé !');
+            });
         }
 
         /* ── SERVICE WORKER ── */
-        async function initServiceWorker() {
+        function initServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            try {
-                var reg = await navigator.serviceWorker.register('/sw.js');
+            navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                swReg = reg;
                 var sw = reg.active || reg.installing || reg.waiting;
                 if (sw) sw.postMessage({ type: 'SCHEDULE_CHECKS' });
                 updateNotifStatusUI();
-            } catch(err) { console.error('[SW]', err); }
+            }).catch(function(err) { console.error('[SW]', err); });
         }
 
-        async function requestNotificationPermission() {
+        function requestNotificationPermission() {
             if (!('Notification' in window)) { showToast('❌ Notifications non supportées'); return; }
-            var permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                dismissBanner();
-                updateNotifStatusUI();
-                showToast('🔔 Notifications activées !');
-                initServiceWorker();
-            } else {
-                showToast('❌ Notifications refusées');
-            }
+            Notification.requestPermission().then(function(permission) {
+                if (permission === 'granted') {
+                    dismissBanner();
+                    updateNotifStatusUI();
+                    showToast('🔔 Notifications activées !');
+                    initServiceWorker();
+                } else {
+                    showToast('❌ Notifications refusées');
+                }
+            });
         }
 
         function updateNotifStatusUI() {
@@ -370,13 +440,11 @@
             var icon = document.getElementById('notif-status');
             icon.classList.remove('hidden');
             icon.textContent = Notification.permission === 'granted' ? '🔔' : '🔕';
-            icon.title = Notification.permission === 'granted'
-                ? 'Notifications actives — dim. 15h, 20h, 23h30 + malus 23h59'
-                : 'Notifications inactives — cliquez pour activer';
+            icon.title = Notification.permission === 'granted' ? 'Notifications actives' : 'Cliquer pour activer';
         }
 
         function showNotifInfo() {
-            if (Notification.permission === 'granted') showToast('🔔 Actives — dim. 15h / 20h / 23h30 + malus 23h59');
+            if (Notification.permission === 'granted') showToast('🔔 Actives — dim. 15h / 20h / 23h30 + malus 23h59 + validations');
             else requestNotificationPermission();
         }
 
@@ -394,34 +462,12 @@
             setTimeout(function(){ document.getElementById('notif-banner').classList.remove('hidden'); }, 1500);
         }
 
-        async function sendTestNotification() {
-            if (Notification.permission !== 'granted') { await requestNotificationPermission(); return; }
-            var weekNum = getWeekNumber();
-            var u = await dbGet('scores', 'name,last_week_validated');
-            var nonValides = (u || []).filter(function(x){ return x.last_week_validated !== weekNum; }).map(function(x){ return x.name; });
-            var reg = await navigator.serviceWorker.getRegistration();
-            if (!reg) { showToast('❌ Service Worker non disponible'); return; }
-            reg.showNotification(
-                nonValides.length === 0 ? '✅ Tout le monde a validé !' : '🔔 Test — Missions en attente',
-                { body: nonValides.length === 0 ? 'Bravo l\'équipe ! 🎉' : nonValides.join(', ') + ' n\'ont pas encore validé.', icon: '/icon-192.png', vibrate: [200,100,200] }
-            );
-            showToast('🔔 Notification test envoyée !');
-        }
-
-        async function adminSendAlert() {
-            await sendTestNotification();
-            document.getElementById('admin-panel').classList.add('hidden');
-        }
-
         /* ── MODE SOMBRE ── */
         function toggleDarkMode() {
             var html = document.documentElement;
             var icon = document.getElementById('theme-icon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark'); localStorage.setItem('theme','light'); icon.innerText = "🌞";
-            } else {
-                html.classList.add('dark'); localStorage.setItem('theme','dark'); icon.innerText = "🌙";
-            }
+            if (html.classList.contains('dark')) { html.classList.remove('dark'); localStorage.setItem('theme','light'); icon.innerText = "🌞"; }
+            else { html.classList.add('dark'); localStorage.setItem('theme','dark'); icon.innerText = "🌙"; }
             if (myChart) renderChart([]);
         }
 
@@ -433,10 +479,7 @@
 
         /* ── INIT ── */
         function init() {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').innerText = "🌙";
-            }
+            if (localStorage.getItem('theme') === 'dark') { document.documentElement.classList.add('dark'); document.getElementById('theme-icon').innerText = "🌙"; }
             document.getElementById('week-info').innerText = 'Semaine n°' + getWeekNumber();
             initServiceWorker();
             updateNotifStatusUI();

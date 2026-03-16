@@ -71,7 +71,7 @@
             body        { overflow: hidden; height: 100vh; }
 
             /* La zone principale occupe tout l'espace entre header et footer */
-            #main-grid  { height: calc(100vh - 110px); overflow: hidden; }
+            #main-grid  { height: calc(100vh - 108px); overflow: hidden; }
 
             /* Colonne gauche : les 5 cartes missions s'étalent
                sur toute la hauteur — AUCUN scroll, tout visible */
@@ -81,12 +81,54 @@
                 display: flex;
                 flex-direction: column;
             }
-            #tasks-container {
-                flex-grow: 1;
+
+            /* Bloc blanc intérieur */
+            #col-missions > div {
+                height: 100%;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-around; /* répartit l'espace uniformément */
+                padding: 14px 18px !important;
+            }
+
+            /* Titre missions */
+            #col-missions h2 {
+                font-size: 1.1rem !important;
+                margin-bottom: 6px !important;
+            }
+
+            /* Légende */
+            #col-missions .flex.flex-wrap {
+                margin-bottom: 6px !important;
+            }
+
+            /* Conteneur cartes : répartition uniforme sans scroll */
+            #tasks-container {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
                 overflow: hidden;
+                gap: 0 !important;
+            }
+
+            /* Cartes missions plus compactes */
+            #tasks-container .mission-card,
+            #tasks-container > div {
+                padding: 8px 14px !important;
+                border-radius: 16px !important;
+                flex-shrink: 0;
+            }
+
+            /* Texte des cartes plus petit */
+            #tasks-container p.font-bold {
+                font-size: 0.8rem !important;
+            }
+
+            /* Boutons plus compacts */
+            #tasks-container button {
+                padding: 6px 14px !important;
+                font-size: 9px !important;
+                border-radius: 10px !important;
             }
 
             /* Colonne droite : scroll interne si le contenu dépasse */
@@ -95,7 +137,7 @@
                 overflow-y: auto;
                 display: flex;
                 flex-direction: column;
-                gap: 1.5rem;
+                gap: 1rem;
             }
         }
 

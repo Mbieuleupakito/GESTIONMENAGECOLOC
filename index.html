@@ -130,6 +130,45 @@
                 </div>
             </div>
 
+            <!-- SECTION NOTIFICATION CIBLÉE -->
+            <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
+                <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3">📨 Envoyer une notification ciblée</p>
+
+                <!-- Sélection des destinataires -->
+                <p class="text-[9px] font-bold text-slate-500 uppercase mb-2">Destinataires :</p>
+                <div id="notif-targets" class="grid grid-cols-3 gap-1 mb-3">
+                    <!-- Généré dynamiquement -->
+                </div>
+
+                <!-- Type de message -->
+                <p class="text-[9px] font-bold text-slate-500 uppercase mb-2">Message :</p>
+                <select id="notif-type" onchange="updateNotifPreview()"
+                    class="w-full text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 mb-2 font-bold">
+                    <option value="auto">🤖 Automatique (selon le jour)</option>
+                    <option value="jours">📅 Rappel nombre de jours restants</option>
+                    <option value="heures">⏰ Rappel nombre d'heures restantes</option>
+                    <option value="urgent">🚨 URGENT — Dernière chance</option>
+                    <option value="custom">✏️ Message personnalisé</option>
+                </select>
+
+                <!-- Message personnalisé -->
+                <div id="custom-msg-box" class="hidden mb-2">
+                    <input id="custom-msg" type="text" placeholder="Ton message ici..." oninput="updateNotifPreview()"
+                        class="w-full text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 font-bold"/>
+                </div>
+
+                <!-- Aperçu du message -->
+                <div id="notif-preview" class="bg-white dark:bg-slate-900 rounded-xl p-3 mb-3 text-[10px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 italic">
+                    Sélectionne des destinataires pour voir l'aperçu...
+                </div>
+
+                <!-- Bouton envoyer -->
+                <button onclick="sendTargetedNotif()"
+                    class="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs active:scale-95 transition-all">
+                    📨 Envoyer la notification
+                </button>
+            </div>
+
             <!-- BOUTONS FERMER / RESET -->
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold text-sm">Fermer</button>
@@ -292,6 +331,7 @@
 
                     renderTasks(users);
                     renderChart(users);
+                    buildTargetButtons(users);
                 });
             });
         }
@@ -510,6 +550,194 @@
             updateNotifStatusUI();
             checkShowBanner();
             fetchAllData();
+        }
+
+        /* ── NOTIFICATION CIBLÉE ADMIN ─────────────────────────────
+           Permet à l'admin d'envoyer une notification personnalisée
+           à un ou plusieurs colocataires selon le contexte du jour.
+        ──────────────────────────────────────────────────────── */
+
+        var selectedTargets = []; /* Colocataires sélectionnés */
+
+        /* Génère les boutons de sélection des destinataires */
+        function buildTargetButtons(users) {
+            var container = document.getElementById('notif-targets');
+            if (!container) return;
+            container.innerHTML = colocs.map(function(nom) {
+                var user = users ? users.find(function(u){ return u.name === nom; }) : null;
+                var pts = user ? user.points : 0;
+                var validated = user ? user.last_week_validated === getWeekNumber() : false;
+                var statusIcon = validated ? '✅' : '⏳';
+                return '<button onclick="toggleTarget('' + nom + '', this)" data-target="' + nom + '" class="target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95">' +
+                    statusIcon + '<br>' + nom + '<br><span class="text-[8px] opacity-60">' + pts + 'pts</span>' +
+                '</button>';
+            }).join('');
+        }
+
+        /* Toggle sélection d'un destinataire */
+        function toggleTarget(nom, btn) {
+            var idx = selectedTargets.indexOf(nom);
+            if (idx === -1) {
+                selectedTargets.push(nom);
+                btn.className = 'target-btn bg-blue-600 text-white py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95';
+            } else {
+                selectedTargets.splice(idx, 1);
+                btn.className = 'target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95';
+            }
+            updateNotifPreview();
+        }
+
+        /* Calcule le message automatique selon le jour et l'heure */
+        function getAutoMessage(nom) {
+            var now = new Date();
+            var day = now.getDay(); /* 0=dim */
+            var hour = now.getHours();
+
+            if (day === 0) {
+                /* Dimanche */
+                var heuresRestantes = 23 - hour;
+                if (hour >= 22) {
+                    return '🚨 ' + nom + ' — URGENCE ! Il ne te reste plus qu'1 heure pour valider ta tâche avant le malus automatique !';
+                } else if (hour >= 20) {
+                    return '⏰ ' + nom + ' — Il te reste ' + heuresRestantes + ' heures pour valider ta tâche ce dimanche. Ne rate pas ça !';
+                } else {
+                    return '🔔 ' + nom + ' — Rappel dimanche ! Valide ta tâche avant ce soir minuit.';
+                }
+            } else {
+                /* Lundi à samedi */
+                var joursRestants = 7 - day; /* Jours avant dimanche */
+                if (joursRestants === 1) {
+                    return '⚠️ ' + nom + ' — Demain c'est dimanche ! N'oublie pas de valider ta tâche avant minuit.';
+                } else {
+                    return '📅 ' + nom + ' — Il te reste ' + joursRestants + ' jours pour valider ta tâche de la semaine. Ne tarde pas !';
+                }
+            }
+        }
+
+        /* Met à jour l'aperçu du message */
+        function updateNotifPreview() {
+            var type = document.getElementById('notif-type').value;
+            var preview = document.getElementById('notif-preview');
+            var customBox = document.getElementById('custom-msg-box');
+
+            /* Affiche/cache le champ personnalisé */
+            if (type === 'custom') {
+                customBox.classList.remove('hidden');
+            } else {
+                customBox.classList.add('hidden');
+            }
+
+            if (selectedTargets.length === 0) {
+                preview.textContent = 'Sélectionne des destinataires pour voir l'aperçu...';
+                return;
+            }
+
+            var now = new Date();
+            var day = now.getDay();
+            var hour = now.getHours();
+            var joursRestants = day === 0 ? 0 : 7 - day;
+            var heuresRestantes = day === 0 ? (23 - hour) : null;
+            var names = selectedTargets.join(', ');
+            var msg = '';
+
+            if (type === 'auto') {
+                msg = getAutoMessage(selectedTargets[0]);
+                if (selectedTargets.length > 1) {
+                    msg = '🔔 ' + names + ' — ' + (day === 0
+                        ? 'Rappel dimanche ! Validez vos tâches avant minuit.'
+                        : 'Il reste ' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' pour valider vos tâches.');
+                }
+            } else if (type === 'jours') {
+                msg = '📅 ' + names + ' — Il vous reste ' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' pour valider votre tâche de la semaine !';
+            } else if (type === 'heures') {
+                if (heuresRestantes !== null) {
+                    msg = '⏰ ' + names + ' — Il vous reste ' + heuresRestantes + ' heure' + (heuresRestantes > 1 ? 's' : '') + ' pour valider votre tâche !';
+                } else {
+                    msg = '⏰ ' + names + ' — Nous ne sommes pas encore dimanche. Le rappel en heures est disponible le dimanche.';
+                }
+            } else if (type === 'urgent') {
+                msg = '🚨 ' + names + ' — URGENCE ! Validez votre tâche MAINTENANT avant le malus automatique !';
+            } else if (type === 'custom') {
+                var customMsg = document.getElementById('custom-msg').value;
+                msg = customMsg ? ('💬 ' + names + ' — ' + customMsg) : 'Écris ton message ci-dessus...';
+            }
+
+            preview.textContent = msg;
+        }
+
+        /* Envoie la notification ciblée */
+        function sendTargetedNotif() {
+            if (selectedTargets.length === 0) {
+                showToast('⚠️ Sélectionne au moins un destinataire !');
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                showToast('❌ Active les notifications d'abord !');
+                return;
+            }
+
+            var type = document.getElementById('notif-type').value;
+            var now = new Date();
+            var day = now.getDay();
+            var hour = now.getHours();
+            var joursRestants = day === 0 ? 0 : 7 - day;
+            var heuresRestantes = day === 0 ? (23 - hour) : null;
+
+            selectedTargets.forEach(function(nom) {
+                var msg = '';
+                var title = '';
+                var isUrgent = false;
+
+                if (type === 'auto') {
+                    msg = getAutoMessage(nom);
+                    title = day === 0 && hour >= 20 ? '🚨 Rappel urgent !' : '🔔 Rappel de tâche';
+                    isUrgent = day === 0 && hour >= 20;
+                } else if (type === 'jours') {
+                    title = '📅 Rappel — ' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' restant' + (joursRestants > 1 ? 's' : '');
+                    msg = nom + ' — Il te reste ' + joursRestants + ' jour' + (joursRestants > 1 ? 's' : '') + ' pour valider ta tâche de la semaine !';
+                } else if (type === 'heures') {
+                    if (heuresRestantes !== null) {
+                        title = '⏰ ' + heuresRestantes + 'h restante' + (heuresRestantes > 1 ? 's' : '') + ' !';
+                        msg = nom + ' — Il te reste ' + heuresRestantes + ' heure' + (heuresRestantes > 1 ? 's' : '') + ' pour valider ta tâche !';
+                        isUrgent = heuresRestantes <= 3;
+                    } else {
+                        showToast('⚠️ Le rappel en heures est disponible le dimanche uniquement !');
+                        return;
+                    }
+                } else if (type === 'urgent') {
+                    title = '🚨 URGENT — Valide ta tâche !';
+                    msg = nom + ' — Valide ta tâche MAINTENANT avant le malus automatique de 23h59 !';
+                    isUrgent = true;
+                } else if (type === 'custom') {
+                    var customMsg = document.getElementById('custom-msg').value;
+                    if (!customMsg) { showToast('⚠️ Écris un message d'abord !'); return; }
+                    title = '💬 Message de Pakito';
+                    msg = nom + ' — ' + customMsg;
+                }
+
+                /* Joue le son adapté */
+                if (isUrgent) { playAlarmSound(); }
+                else { playRappelSound(); }
+
+                /* Envoie la notification */
+                try {
+                    new Notification(title, {
+                        body: msg,
+                        icon: '/icon-192.png',
+                        vibrate: isUrgent ? [500,200,500,200,500] : [200,100,200],
+                        silent: false
+                    });
+                } catch(e) { console.error('Notif error', e); }
+            });
+
+            showToast('📨 Notification envoyée à ' + selectedTargets.join(', ') + ' !');
+
+            /* Reset la sélection */
+            selectedTargets = [];
+            document.querySelectorAll('.target-btn').forEach(function(btn) {
+                btn.className = 'target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95';
+            });
+            document.getElementById('notif-preview').textContent = 'Sélectionne des destinataires pour voir l'aperçu...';
         }
 
         /* ── SONS VIA WEB AUDIO API ─────────────────────────────────

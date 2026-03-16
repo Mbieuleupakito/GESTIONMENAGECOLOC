@@ -329,6 +329,7 @@
 
                 dbUpdate('scores', updateData, ['id=eq.' + user.id]).then(function() {
                     dbInsert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
+                    playValidationSound();
                     showToast('✅ ' + nom + ' — +' + pts + ' point' + (pts>1?'s':'') + ' !');
 
                     /* Envoie notification aux autres colocs */
@@ -388,6 +389,7 @@
                 requireInteraction: true,
                 silent: false
             });
+            playAlarmSound();
             showToast('🚨 Alarme test envoyée !');
             /* Ferme après 8 secondes */
             setTimeout(function(){ n.close(); }, 8000);
@@ -406,6 +408,7 @@
                 vibrate: [100,50,100],
                 silent: false
             });
+            playValidationSound();
             showToast('✅ Notif validation test envoyée !');
             setTimeout(function(){ n.close(); }, 5000);
         }
@@ -426,6 +429,7 @@
                     vibrate: [200,100,200],
                     silent: false
                 });
+                playRappelSound();
                 showToast('🔔 Rappel test envoyé !');
                 setTimeout(function(){ n.close(); }, 5000);
             });
@@ -506,6 +510,64 @@
             updateNotifStatusUI();
             checkShowBanner();
             fetchAllData();
+        }
+
+        /* ── SONS VIA WEB AUDIO API ─────────────────────────────────
+           Joue un son directement dans la page.
+           Fonctionne sur PC et mobile sans aucune restriction.
+        ──────────────────────────────────────────────────────── */
+        function playAlarmSound() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8].forEach(function(t) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 880;
+                    osc.type = 'square';
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.25);
+                    osc.start(ctx.currentTime + t);
+                    osc.stop(ctx.currentTime + t + 0.25);
+                });
+            } catch(e) {}
+        }
+
+        function playValidationSound() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [523, 659, 784].forEach(function(freq, i) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.3);
+                    osc.start(ctx.currentTime + i * 0.15);
+                    osc.stop(ctx.currentTime + i * 0.15 + 0.3);
+                });
+            } catch(e) {}
+        }
+
+        function playRappelSound() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 0.4].forEach(function(t) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 660;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime + t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.3);
+                    osc.start(ctx.currentTime + t);
+                    osc.stop(ctx.currentTime + t + 0.3);
+                });
+            } catch(e) {}
         }
 
         init();

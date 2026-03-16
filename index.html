@@ -46,7 +46,7 @@
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS SDK — version fixe compatible Safari iOS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <!-- fetch natif utilisé à la place du SDK Supabase -->
     <!-- Chart.js (graphique en barres) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -369,7 +369,132 @@
         ──────────────────────────────────────────────────────────── */
         const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
-        const _supabase    = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        /* ── MINI CLIENT SUPABASE EN FETCH NATIF ────────────────────
+           Remplace le SDK @supabase/supabase-js pour une compatibilité
+           maximale avec Safari iOS et tous les navigateurs.
+           Fonctionne avec fetch() natif, sans dépendance externe.
+        ──────────────────────────────────────────────────────────── */
+        const _supabase = {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            from(table) {
+                return {
+                    _table: table,
+                    _filters: [],
+                    _order: null,
+                    _limit: null,
+                    select(cols = '*') {
+                        this._cols = cols;
+                        return this;
+                    },
+                    order(col, opts = {}) {
+                        this._order = `${col}=${opts.ascending === false ? 'desc' : 'asc'}`;
+                        return this;
+                    },
+                    limit(n) {
+                        this._limit = n;
+                        return this;
+                    },
+                    eq(col, val) {
+                        this._filters.push(`${col}=eq.${val}`);
+                        return this;
+                    },
+                    neq(col, val) {
+                        this._filters.push(`${col}=neq.${val}`);
+                        return this;
+                    },
+                    async _buildUrl() {
+                        let url = `${SUPABASE_URL}/rest/v1/${this._table}?select=${this._cols || '*'}`;
+                        this._filters.forEach(f => url += `&${f}`);
+                        if (this._order) url += `&order=${this._order}`;
+                        if (this._limit) url += `&limit=${this._limit}`;
+                        return url;
+                    },
+                    async select(cols = '*') {
+                        this._cols = cols;
+                        return this;
+                    },
+                    async get() {
+                        const url = await this._buildUrl();
+                        const res = await fetch(url, { headers: _supabase.headers });
+                        const data = await res.json();
+                        return { data, error: res.ok ? null : data };
+                    },
+                    async update(obj) {
+                        const url = `${SUPABASE_URL}/rest/v1/${this._table}?${this._filters.join('&')}`;
+                        const res = await fetch(url, {
+                            method: 'PATCH',
+                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
+                            body: JSON.stringify(obj)
+                        });
+                        return { error: res.ok ? null : await res.json() };
+                    },
+                    async insert(obj) {
+                        const url = `${SUPABASE_URL}/rest/v1/${this._table}`;
+                        const body = Array.isArray(obj) ? obj[0] : obj;
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
+                            body: JSON.stringify(body)
+                        });
+                        return { error: res.ok ? null : await res.json() };
+                    },
+                    async delete() {
+                        const url = `${SUPABASE_URL}/rest/v1/${this._table}?${this._filters.join('&')}`;
+                        const res = await fetch(url, {
+                            method: 'DELETE',
+                            headers: { ..._supabase.headers, 'Prefer': 'return=minimal' }
+                        });
+                        return { error: res.ok ? null : await res.json() };
+                    }
+                };
+            }
+        };
+
+        /* Wrapper pour compatibilité avec l'ancienne syntaxe await _supabase.from().select() */
+        const _db = {
+            async query(table, cols = '*', filters = [], order = null, limit = null) {
+                let url = `${SUPABASE_URL}/rest/v1/${table}?select=${cols}`;
+                filters.forEach(f => url += `&${f}`);
+                if (order) url += `&order=${order}`;
+                if (limit) url += `&limit=${limit}`;
+                const res = await fetch(url, { headers: _supabase.headers });
+                const data = await res.json();
+                return { data: Array.isArray(data) ? data : [], error: res.ok ? null : data };
+            },
+            async update(table, obj, filters = []) {
+                let url = `${SUPABASE_URL}/rest/v1/${table}`;
+                if (filters.length) url += '?' + filters.join('&');
+                const res = await fetch(url, {
+                    method: 'PATCH',
+                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
+                    body: JSON.stringify(obj)
+                });
+                return { error: res.ok ? null : await res.json() };
+            },
+            async insert(table, obj) {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+                    method: 'POST',
+                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' },
+                    body: JSON.stringify(Array.isArray(obj) ? obj[0] : obj)
+                });
+                return { error: res.ok ? null : await res.json() };
+            },
+            async delete(table, filters = []) {
+                let url = `${SUPABASE_URL}/rest/v1/${table}`;
+                if (filters.length) url += '?' + filters.join('&');
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: { ..._supabase.headers, 'Prefer': 'return=minimal' }
+                });
+                return { error: res.ok ? null : await res.json() };
+            }
+        };
 
         /* ── DONNÉES STATIQUES ──────────────────────────────────────
            Liste des colocataires et des missions dans l'ordre fixe.
@@ -521,19 +646,12 @@
         ──────────────────────────────────────────────────────────── */
         async function validerRetard(nom, btn) {
             try {
-                const { data: all } = await _supabase.from('scores').select('*');
+                const { data: all } = await _db.query('scores', '*');
                 const user = all.find(u => u.name === nom);
                 if (!user || user.retard_valide) return;
 
-                await _supabase.from('scores')
-                    .update({ retard_valide: true })
-                    .eq('id', user.id);
-
-                await _supabase.from('logs').insert([{
-                    name          : nom,
-                    points_gagnes : 0,
-                    type          : 'rattrapage'
-                }]);
+                await _db.update('scores', { retard_valide: true }, [`id=eq.${user.id}`]);
+                await _db.insert('logs', { name: nom, points_gagnes: 0, type: 'rattrapage' });
 
                 showToast(`✅ ${nom} — Rattrapage validé ! Tâche de la semaine débloquée.`);
                 fetchAllData();
@@ -551,13 +669,10 @@
         async function fetchAllData() {
             const weekNum = getWeekNumber();
 
-            const { data: users } = await _supabase
-                .from('scores').select('*').order('points', { ascending: false });
+            const { data: users } = await _db.query('scores', '*', [], 'points.desc');
+            const { data: logs }  = await _db.query('logs', '*', [], 'created_at.desc', 10);
 
-            const { data: logs } = await _supabase
-                .from('logs').select('*').order('created_at', { ascending: false }).limit(10);
-
-            if (!users) return;
+            if (!users || users.length === 0) return;
 
             /* ── PODIUM ──────────────────────────────────────────── */
             document.getElementById('leaderboard').innerHTML = users.map((u, i) => `
@@ -662,7 +777,7 @@
         async function addPoints(nom, btn) {
             const weekNum = getWeekNumber();
             try {
-                const { data: all } = await _supabase.from('scores').select('*');
+                const { data: all } = await _db.query('scores', '*');
                 const user = all.find(u => u.name === nom);
                 if (!user) return;
 
@@ -686,12 +801,8 @@
                     ...(user.retard_valide ? { tache_en_retard: null, retard_valide: false } : {})
                 };
 
-                await _supabase.from('scores').update(updateData).eq('id', user.id);
-                await _supabase.from('logs').insert([{
-                    name          : nom,
-                    points_gagnes : pts,
-                    type          : 'validation'
-                }]);
+                await _db.update('scores', updateData, [`id=eq.${user.id}`]);
+                await _db.insert('logs', { name: nom, points_gagnes: pts, type: 'validation' });
 
                 showToast(`✅ ${nom} — +${pts} point${pts > 1 ? 's' : ''} !`);
                 fetchAllData();
@@ -707,12 +818,8 @@
         async function applyMalus(id, nom, current) {
             if (!confirm(`Punir ${nom} (-2 pts) ?`)) return;
             const newPts = Math.max(0, current - 2);
-            await _supabase.from('scores').update({ points: newPts }).eq('id', id);
-            await _supabase.from('logs').insert([{
-                name          : nom,
-                points_gagnes : -2,
-                type          : 'malus'
-            }]);
+            await _db.update('scores', { points: newPts }, [`id=eq.${id}`]);
+            await _db.insert('logs', { name: nom, points_gagnes: -2, type: 'malus' });
             showToast(`⚠️ Malus appliqué à ${nom}`);
             fetchAllData();
         }
@@ -723,13 +830,8 @@
         ──────────────────────────────────────────────────────────── */
         async function resetAllScores() {
             if (!confirm("🚨 Pakito, confirmes-tu le Reset Total du mois ?")) return;
-            await _supabase.from('scores').update({
-                points              : 0,
-                last_week_validated : 0,
-                tache_en_retard     : null,
-                retard_valide       : false
-            }).neq('id', 0);
-            await _supabase.from('logs').delete().neq('id', 0);
+            await _db.update('scores', { points: 0, last_week_validated: 0, tache_en_retard: null, retard_valide: false }, ['id=neq.0']);
+            await _db.delete('logs', ['id=neq.0']);
             location.reload();
         }
 
@@ -819,7 +921,7 @@
                 return;
             }
             const weekNum     = getWeekNumber();
-            const { data: u } = await _supabase.from('scores').select('name, last_week_validated');
+            const { data: u } = await _db.query('scores', 'name,last_week_validated');
             const nonValides  = (u || []).filter(x => x.last_week_validated !== weekNum).map(x => x.name);
             const reg         = await navigator.serviceWorker.getRegistration();
             if (!reg) { showToast('❌ Service Worker non disponible'); return; }

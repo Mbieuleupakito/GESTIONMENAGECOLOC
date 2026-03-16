@@ -228,13 +228,19 @@ async function getUnvalidatedColocs() {
     }
 }
 
-/* ── HELPER : NUMÉRO DE SEMAINE ISO ─────────────────────────────
-   Calcule le numéro de semaine de l'année en cours
-   (identique à la fonction dans index.html)                   */
+/* ── HELPER : NUMÉRO DE SEMAINE ─────────────────────────────
+   Calcule le numéro de semaine basé sur le LUNDI.
+   Chaque lundi à 00h00 → nouvelle semaine → nouvelles missions.
+   Dimanche soir ≠ lundi matin (semaines différentes).        */
 function getWeekNumber() {
-    const now   = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    return Math.ceil((((now - start) / 86400000) + start.getDay() + 1) / 7);
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const day = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    monday.setHours(0, 0, 0, 0);
+    const days = Math.floor((monday - startOfYear) / 86400000);
+    return Math.floor(days / 7) + 1;
 }
 
 /* ── GESTION DU CLIC SUR UNE NOTIFICATION ───────────────────────

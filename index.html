@@ -568,9 +568,10 @@
                 var pts = user ? user.points : 0;
                 var validated = user ? user.last_week_validated === getWeekNumber() : false;
                 var statusIcon = validated ? '✅' : '⏳';
-                return '<button onclick="toggleTarget('' + nom + '', this)" data-target="' + nom + '" class="target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95">' +
+                var btn = '<button onclick="toggleTarget(\'' + nom + '\', this)" data-target="' + nom + '" class="target-btn bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 px-1 rounded-xl text-[9px] font-black text-center transition-all active:scale-95">' +
                     statusIcon + '<br>' + nom + '<br><span class="text-[8px] opacity-60">' + pts + 'pts</span>' +
                 '</button>';
+                return btn;
             }).join('');
         }
 
@@ -597,7 +598,7 @@
                 /* Dimanche */
                 var heuresRestantes = 23 - hour;
                 if (hour >= 22) {
-                    return '🚨 ' + nom + ' — URGENCE ! Il ne te reste plus qu'1 heure pour valider ta tâche avant le malus automatique !';
+                    return '🚨 ' + nom + ' — URGENCE ! Il ne te reste plus qu\'1 heure pour valider ta tache avant le malus automatique !';
                 } else if (hour >= 20) {
                     return '⏰ ' + nom + ' — Il te reste ' + heuresRestantes + ' heures pour valider ta tâche ce dimanche. Ne rate pas ça !';
                 } else {
@@ -607,7 +608,7 @@
                 /* Lundi à samedi */
                 var joursRestants = 7 - day; /* Jours avant dimanche */
                 if (joursRestants === 1) {
-                    return '⚠️ ' + nom + ' — Demain c'est dimanche ! N'oublie pas de valider ta tâche avant minuit.';
+                    return '⚠️ ' + nom + ' — Demain c\'est dimanche ! N\'oublie pas de valider ta tache avant minuit.';
                 } else {
                     return '📅 ' + nom + ' — Il te reste ' + joursRestants + ' jours pour valider ta tâche de la semaine. Ne tarde pas !';
                 }
@@ -672,7 +673,7 @@
                 return;
             }
             if (Notification.permission !== 'granted') {
-                showToast('❌ Active les notifications d'abord !');
+                showToast('❌ Active les notifications - accepte les notifications !');
                 return;
             }
 
@@ -710,7 +711,7 @@
                     isUrgent = true;
                 } else if (type === 'custom') {
                     var customMsg = document.getElementById('custom-msg').value;
-                    if (!customMsg) { showToast('⚠️ Écris un message d'abord !'); return; }
+                    if (!customMsg) { showToast('⚠️ Ecris un message dabord !'); return; }
                     title = '💬 Message de Pakito';
                     msg = nom + ' — ' + customMsg;
                 }

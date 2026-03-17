@@ -158,6 +158,11 @@
                 </div>
             </div>
 
+            <!-- Changer d'identite -->
+            <button onclick="changeIdentity(); closeAdmin();" class="w-full bg-slate-500 text-white py-2 rounded-xl font-bold text-xs mb-4">
+                👤 Changer d'identite
+            </button>
+
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="closeAdmin()" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold text-sm">Fermer</button>
                 <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold text-sm">RESET MOIS</button>
@@ -167,6 +172,23 @@
 
     <!-- TOAST -->
     <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold max-w-xs text-center"></div>
+
+    <!-- MODAL IDENTITE (premier lancement) -->
+    <div id="identity-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm p-8 rounded-[3rem] shadow-2xl text-center border-2 border-blue-500">
+            <div class="text-5xl mb-4">🏠</div>
+            <h3 class="text-blue-600 font-black text-xl mb-2 uppercase italic">GTM Coloc</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Qui es-tu ? Selectionne ton nom pour recevoir les bonnes notifications.</p>
+            <div class="grid grid-cols-1 gap-3 mb-6">
+                <button onclick="setIdentity('CHIESA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">CHIESA</button>
+                <button onclick="setIdentity('ISSA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">ISSA</button>
+                <button onclick="setIdentity('PAKITO')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">PAKITO</button>
+                <button onclick="setIdentity('GEOFFROY')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">GEOFFROY</button>
+                <button onclick="setIdentity('ISMAEL')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">ISMAEL</button>
+            </div>
+            <p class="text-slate-400 text-[10px]">Ce choix est enregistre sur cet appareil uniquement.</p>
+        </div>
+    </div>
 
     <script>
         /* ── CONFIG ── */
@@ -610,6 +632,52 @@
         });
         function closeAdmin(){document.getElementById('admin-panel').classList.add('hidden');selectedNotifTargets=[];}
 
+        /* ── IDENTITE COLOC ─────────────────────────────────────────
+           Chaque appareil memorise le nom du colocataire.
+           OneSignal utilise ce tag pour le ciblage individuel.
+        ──────────────────────────────────────────────────────── */
+        function checkIdentity() {
+            var nom = localStorage.getItem('gtm-coloc-identity');
+            if (!nom) {
+                /* Premier lancement — affiche le modal */
+                document.getElementById('identity-modal').classList.remove('hidden');
+            } else {
+                /* Identite connue — met a jour le tag OneSignal */
+                setOSTag(nom);
+                updateHeaderIdentity(nom);
+            }
+        }
+
+        function setIdentity(nom) {
+            localStorage.setItem('gtm-coloc-identity', nom);
+            document.getElementById('identity-modal').classList.add('hidden');
+            setOSTag(nom);
+            updateHeaderIdentity(nom);
+            showToast('Bienvenue ' + nom + ' !');
+            /* Demande permission notifications OneSignal */
+            OneSignalDeferred.push(function(OS) {
+                OS.User.PushSubscription.optIn();
+            });
+        }
+
+        function setOSTag(nom) {
+            /* Tag OneSignal pour ciblage individuel */
+            OneSignalDeferred.push(function(OS) {
+                OS.User.addTags({ nom: nom, app: 'gtm-coloc' });
+            });
+        }
+
+        function updateHeaderIdentity(nom) {
+            var wi = document.getElementById('week-info');
+            if (wi) wi.innerText = 'Semaine n' + getWeekNumber() + ' — ' + nom;
+        }
+
+        function changeIdentity() {
+            /* Permet de changer d'identite depuis le panel admin */
+            localStorage.removeItem('gtm-coloc-identity');
+            document.getElementById('identity-modal').classList.remove('hidden');
+        }
+
         /* ── INIT ── */
         function init() {
             if (localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.getElementById('theme-icon').innerText='🌙';}
@@ -622,6 +690,7 @@
                 });
             }
             setTimeout(updateNotifStatusUI, 2000);
+            checkIdentity();
             fetchAllData();
         }
         init();

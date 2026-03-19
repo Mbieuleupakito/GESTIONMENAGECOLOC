@@ -11,24 +11,37 @@ var HEADERS = {
     'Authorization': 'Bearer ' + SUPABASE_KEY,
     'Content-Type': 'application/json'
 };
-var VAPID_PUBLIC_KEY = 'BO9fd3R7mU3GdU4ExabEU1PO3k9wmp1NLQMAvk7JVuLrq8znQQAUkQ5sUaf8FZUoBUYr-jcDmQDrAJORbOPf2Yg';
+var VAPID_PUBLIC_KEY = 'BIs_xQQwdx0Nor9blgvL0iWafAQhfQvHum5mr6lPYD6F-jpW7kSvOH3ZlcR6i6wYolkT5TAWHawzjb_YAqN8pzI';
 
 self.addEventListener('install', function() { self.skipWaiting(); });
 self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
 
 /* ── RÉCEPTION NOTIFICATION PUSH ── */
 self.addEventListener('push', function(event) {
-    if (!event.data) return;
-    var data = event.data.json();
+    var title = 'GTM Coloc';
+    var body = '';
+    var urgent = false;
+
+    if (event.data) {
+        try {
+            var data = event.data.json();
+            title = data.title || title;
+            body = data.body || body;
+            urgent = data.urgent || false;
+        } catch(e) {
+            body = event.data.text();
+        }
+    }
+
     event.waitUntil(
-        self.registration.showNotification(data.title || 'GTM Coloc', {
-            body: data.body || '',
+        self.registration.showNotification(title, {
+            body: body,
             icon: '/icon-192.png',
             badge: '/icon-192.png',
-            vibrate: data.urgent ? [500,200,500,200,500] : [100,50,100],
-            requireInteraction: data.urgent || false,
-            tag: data.tag || 'gtm-coloc-' + Date.now(),
-            data: { url: '/' }
+            vibrate: urgent ? [500,200,500,200,500] : [100,50,100],
+            requireInteraction: urgent,
+            tag: 'gtm-coloc-' + Date.now(),
+            silent: false
         })
     );
 });

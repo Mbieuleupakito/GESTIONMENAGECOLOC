@@ -194,29 +194,72 @@
         var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
         var HEADERS = {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json'};
 
-        /* ── NTFY — Notifications cross-appareils ────────────────────
-           Canal public : gtm-coloc-appart48
-           Chaque coloc s'abonne via l'app Ntfy sur son telephone.
+        /* ── VAPID — Notifications push natives cross-appareils ────
+           Notifications natives sans app tierce.
+           Ciblage individuel par nom de colocataire.
         ──────────────────────────────────────────────────────── */
-        var NTFY_TOPIC = 'gtm-coloc-appart48';
-        var NTFY_URL = 'https://ntfy.sh/' + NTFY_TOPIC;
+        var VAPID_PUBLIC_KEY = 'YUUaVz8eYW-rK1Afn9H8mY6rdegnemCGf68vjSUTJMCx02Omc2TYzFjMPIOJ2IA_Jh5WMsqo23NXragzp6ceBg';
 
-        function sendNtfyNotification(title, body, urgent) {
-            var priority = urgent ? '5' : '3';
-            var tags = urgent ? 'rotating_light' : 'bell';
-            return fetch(NTFY_URL, {
-                method: 'POST',
-                headers: {
-                    'Title': encodeURIComponent(title),
-                    'Priority': priority,
-                    'Tags': tags,
-                    'Content-Type': 'text/plain; charset=utf-8'
-                },
-                body: body
-            }).then(function(r) {
-                console.log('Ntfy sent:', r.status);
+        /* Convertit base64url en Uint8Array pour le navigateur */
+        function urlBase64ToUint8Array(base64String) {
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        /* Abonne l'appareil aux notifications push VAPID */
+        function subscribeToPush(nom) {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                console.log('Push non supporte');
+                return Promise.resolve();
+            }
+            return navigator.serviceWorker.ready.then(function(reg) {
+                return reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+            }).then(function(sub) {
+                var subJson = sub.toJSON();
+                /* Sauvegarde dans Supabase */
+                return fetch(SUPABASE_URL + '/rest/v1/push_subscriptions', {
+                    method: 'POST',
+                    headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
+                    body: JSON.stringify({
+                        nom: nom,
+                        endpoint: subJson.endpoint,
+                        p256dh: subJson.keys.p256dh,
+                        auth: subJson.keys.auth
+                    })
+                }).then(function() {
+                    console.log('Abonnement VAPID sauvegarde pour', nom);
+                });
             }).catch(function(e) {
-                console.error('Ntfy error', e);
+                console.error('Erreur abonnement push:', e);
+            });
+        }
+
+        /* Envoie une notification via Edge Function VAPID */
+        function sendVapidNotification(title, body, targets, urgent) {
+            return fetch(SUPABASE_URL + '/functions/v1/send-push', {
+                method: 'POST',
+                headers: Object.assign({}, HEADERS),
+                body: JSON.stringify({
+                    title: title,
+                    body: body,
+                    targets: targets || [],
+                    urgent: urgent || false
+                })
+            }).then(function(r) {
+                return r.json();
+            }).then(function(data) {
+                console.log('Push sent:', data);
+            }).catch(function(e) {
+                console.error('Push error:', e);
             });
         }
 
@@ -309,9 +352,9 @@
             var targets = selectedMsgTargets.length === 0 ? colocs : selectedMsgTargets;
             var targetLabel = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
 
-            /* Envoie via Ntfy — notification cross-appareils */
+            /* Envoie via VAPID — notification cross-appareils */
             var dest = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
-            sendNtfyNotification('💬 Message Coloc → ' + dest, msg, false);
+            sendVapidNotification('💬 Message de la Coloc', dest + ' — ' + msg, selectedMsgTargets, false);
 
             playValidationSound();
             showToast('Message envoye a ' + targetLabel + ' !');
@@ -416,7 +459,7 @@
                     showToast(nom+' — +'+pts+' point'+(pts>1?'s':'')+' !');
                     /* Notif OneSignal à tous les autres */
                     var mi = getMission(colocs.indexOf(nom), wn);
-                    sendNtfyNotification('✅ '+nom+' a valide !', nom+' — '+mi+' est fait ! 💪', false);
+                    sendVapidNotification('✅ '+nom+' a valide !', nom+' — '+mi+' est fait ! 💪', [], false);
                     fetchAllData();
                 });
             });
@@ -497,7 +540,7 @@
             else{var cm=document.getElementById('custom-msg').value;if(!cm){showToast('Ecris un message !');return;}title='Message de Pakito';body=selectedNotifTargets.join(', ')+' — '+cm;}
 
             if (urgent) playAlarmSound(); else playRappelSound();
-            sendNtfyNotification(title, body, urgent);
+            sendVapidNotification(title, body, selectedNotifTargets, urgent);
             showToast('Notification envoyee a '+selectedNotifTargets.join(', ')+' !');
             selectedNotifTargets=[];
             dbGet('scores','*',[],'points.desc').then(function(u){buildNotifTargets(u);});
@@ -507,13 +550,13 @@
         /* ── TESTS ── */
         function testAlarme() {
             playAlarmSound();
-            sendNtfyNotification('🚨 TEST ALARME', 'Test de l alarme du dimanche — GTM Coloc', true);
+            sendVapidNotification('🚨 TEST ALARME', 'Test de l alarme du dimanche — GTM Coloc', [], true);
             showToast('Alarme envoyee a tous !');
         }
         function testValidation() {
             playValidationSound();
             var mi = getMission(colocs.indexOf('PAKITO'), getWeekNumber());
-            sendNtfyNotification('✅ PAKITO a valide !', mi+' — C est fait !', false);
+            sendVapidNotification('✅ PAKITO a valide !', mi+' — C est fait !', [], false);
             showToast('Notif validation envoyee !');
         }
         function testRappel() {
@@ -521,7 +564,7 @@
             dbGet('scores','name,last_week_validated').then(function(u){
                 var nv=(u||[]).filter(function(x){return x.last_week_validated!==wn;}).map(function(x){return x.name;});
                 playRappelSound();
-                if (nv.length) sendNtfyNotification('🔔 Rappel missions', nv.join(', ')+' n ont pas encore valide !', false);
+                if (nv.length) sendVapidNotification('🔔 Rappel missions', nv.join(', ')+' n ont pas encore valide !', nv, false);
                 showToast(nv.length?'Rappel envoye a '+nv.join(', '):'Tout le monde a valide !');
             });
         }
@@ -531,12 +574,19 @@
             var icon = document.getElementById('notif-status');
             if (!icon) return;
             icon.classList.remove('hidden');
-            icon.textContent = '🔔';
-            icon.title = 'Notifications Ntfy actives — Canal: gtm-coloc-appart48';
+            if (!('Notification' in window)) { icon.textContent = '🔕'; return; }
+            icon.textContent = Notification.permission === 'granted' ? '🔔' : '🔕';
+            icon.title = Notification.permission === 'granted' ? 'Notifications push actives' : 'Cliquer pour activer';
         }
 
         function showNotifInfo() {
-            showToast('Canal Ntfy: gtm-coloc-appart48 — Installez l app Ntfy !');
+            if (Notification.permission !== 'granted') {
+                var nom = localStorage.getItem('gtm-coloc-identity');
+                if (nom) setIdentity(nom);
+                else document.getElementById('identity-modal').classList.remove('hidden');
+            } else {
+                showToast('Notifications push actives !');
+            }
         }
 
         /* ── SONS ── */
@@ -619,7 +669,18 @@
             localStorage.setItem('gtm-coloc-identity', nom);
             document.getElementById('identity-modal').classList.add('hidden');
             updateHeaderIdentity(nom);
-            showToast('Bienvenue ' + nom + ' !');
+            showToast('Bienvenue ' + nom + ' ! Activation des notifications...');
+            /* Demande permission + abonnement VAPID */
+            Notification.requestPermission().then(function(permission) {
+                if (permission === 'granted') {
+                    subscribeToPush(nom).then(function() {
+                        showToast('Notifications activees pour ' + nom + ' !');
+                        updateNotifStatusUI();
+                    });
+                } else {
+                    showToast('Notifications refusees — active-les dans les reglages');
+                }
+            });
         }
 
         function updateHeaderIdentity(nom) {

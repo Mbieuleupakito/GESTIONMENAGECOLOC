@@ -14,8 +14,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GestionColoc">
 
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -196,40 +194,30 @@
         var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
         var HEADERS = {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json'};
 
-        /* OneSignal config */
-        var OS_APP_ID = '8a9a23d4-b280-4690-aae0-e783eb199f48';
-        var OS_API_KEY = 'os_v2_app_rknchvfsqbdjbkxa46b6wgm7jcepuik76xeuggmvt7gef2kfxmygvak1xmpcxbq23juqdcyd7fcy6kvcps235oott43cmvbu5ocakdq';
+        /* ── NTFY — Notifications cross-appareils ────────────────────
+           Canal public : gtm-coloc-appart48
+           Chaque coloc s'abonne via l'app Ntfy sur son telephone.
+        ──────────────────────────────────────────────────────── */
+        var NTFY_TOPIC = 'gtm-coloc-appart48';
+        var NTFY_URL = 'https://ntfy.sh/' + NTFY_TOPIC;
 
-        /* ── ONESIGNAL INIT ── */
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(function(OneSignal) {
-            OneSignal.init({
-                appId: OS_APP_ID,
-                safari_web_id: 'web.onesignal.auto.' + OS_APP_ID,
-                notifyButton: { enable: false },
-                allowLocalhostAsSecureOrigin: true,
-            }).then(function() {
-                updateNotifStatusUI();
-                /* Stocke le nom du coloc pour ciblage */
-                OneSignal.User.addTag('app', 'gtm-coloc');
-            });
-        });
-
-        /* ── ENVOYER NOTIF VIA ONESIGNAL API (cross-appareils) ── */
-        function sendOSNotification(title, body, targets, urgent) {
-            /* Appel via Edge Function Supabase pour cacher la clé API */
-            return fetch(SUPABASE_URL + '/functions/v1/send-notification', {
+        function sendNtfyNotification(title, body, urgent) {
+            var priority = urgent ? '5' : '3';
+            var tags = urgent ? 'rotating_light' : 'bell';
+            return fetch(NTFY_URL, {
                 method: 'POST',
-                headers: Object.assign({}, HEADERS, {
-                    'Authorization': 'Bearer sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM'
-                }),
-                body: JSON.stringify({
-                    title: title,
-                    body: body,
-                    targets: targets,
-                    urgent: urgent || false
-                })
-            }).catch(function(e) { console.error('OS notif error', e); });
+                headers: {
+                    'Title': encodeURIComponent(title),
+                    'Priority': priority,
+                    'Tags': tags,
+                    'Content-Type': 'text/plain; charset=utf-8'
+                },
+                body: body
+            }).then(function(r) {
+                console.log('Ntfy sent:', r.status);
+            }).catch(function(e) {
+                console.error('Ntfy error', e);
+            });
         }
 
         /* ── FETCH SUPABASE ── */
@@ -321,15 +309,9 @@
             var targets = selectedMsgTargets.length === 0 ? colocs : selectedMsgTargets;
             var targetLabel = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
 
-            /* Envoie via OneSignal — notification cross-appareils */
-            targets.forEach(function(nom) {
-                sendOSNotification(
-                    'Message de la Coloc',
-                    nom + ' — ' + msg,
-                    [nom],
-                    false
-                );
-            });
+            /* Envoie via Ntfy — notification cross-appareils */
+            var dest = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
+            sendNtfyNotification('💬 Message Coloc → ' + dest, msg, false);
 
             playValidationSound();
             showToast('Message envoye a ' + targetLabel + ' !');
@@ -434,7 +416,7 @@
                     showToast(nom+' — +'+pts+' point'+(pts>1?'s':'')+' !');
                     /* Notif OneSignal à tous les autres */
                     var mi = getMission(colocs.indexOf(nom), wn);
-                    sendOSNotification('✅ '+nom+' a valide sa tache !', mi+' — C\'est fait cette semaine !', colocs.filter(function(c){return c!==nom;}), false);
+                    sendNtfyNotification('✅ '+nom+' a valide !', nom+' — '+mi+' est fait ! 💪', false);
                     fetchAllData();
                 });
             });
@@ -515,7 +497,7 @@
             else{var cm=document.getElementById('custom-msg').value;if(!cm){showToast('Ecris un message !');return;}title='Message de Pakito';body=selectedNotifTargets.join(', ')+' — '+cm;}
 
             if (urgent) playAlarmSound(); else playRappelSound();
-            sendOSNotification(title, body, selectedNotifTargets, urgent);
+            sendNtfyNotification(title, body, urgent);
             showToast('Notification envoyee a '+selectedNotifTargets.join(', ')+' !');
             selectedNotifTargets=[];
             dbGet('scores','*',[],'points.desc').then(function(u){buildNotifTargets(u);});
@@ -525,13 +507,13 @@
         /* ── TESTS ── */
         function testAlarme() {
             playAlarmSound();
-            sendOSNotification('🚨 TEST ALARME', 'Test de l\'alarme du dimanche — GTM Coloc', colocs, true);
+            sendNtfyNotification('🚨 TEST ALARME', 'Test de l alarme du dimanche — GTM Coloc', true);
             showToast('Alarme envoyee a tous !');
         }
         function testValidation() {
             playValidationSound();
             var mi = getMission(colocs.indexOf('PAKITO'), getWeekNumber());
-            sendOSNotification('✅ PAKITO a valide !', mi+' — C\'est fait !', colocs.filter(function(c){return c!=='PAKITO';}), false);
+            sendNtfyNotification('✅ PAKITO a valide !', mi+' — C est fait !', false);
             showToast('Notif validation envoyee !');
         }
         function testRappel() {
@@ -539,7 +521,7 @@
             dbGet('scores','name,last_week_validated').then(function(u){
                 var nv=(u||[]).filter(function(x){return x.last_week_validated!==wn;}).map(function(x){return x.name;});
                 playRappelSound();
-                if (nv.length) sendOSNotification('🔔 Rappel missions', nv.join(', ')+' n\'ont pas encore valide !', nv, false);
+                if (nv.length) sendNtfyNotification('🔔 Rappel missions', nv.join(', ')+' n ont pas encore valide !', false);
                 showToast(nv.length?'Rappel envoye a '+nv.join(', '):'Tout le monde a valide !');
             });
         }
@@ -549,27 +531,12 @@
             var icon = document.getElementById('notif-status');
             if (!icon) return;
             icon.classList.remove('hidden');
-            if (typeof OneSignal !== 'undefined' && window.OneSignalDeferred) {
-                OneSignalDeferred.push(function(OS) {
-                    OS.User.PushSubscription.optedIn.then ? 
-                        OS.User.PushSubscription.optedIn.then(function(opted){
-                            icon.textContent = opted ? '🔔' : '🔕';
-                            icon.title = opted ? 'Notifications OneSignal actives' : 'Cliquez pour activer';
-                        }) : (icon.textContent = '🔔');
-                });
-            }
+            icon.textContent = '🔔';
+            icon.title = 'Notifications Ntfy actives — Canal: gtm-coloc-appart48';
         }
 
         function showNotifInfo() {
-            if (typeof OneSignal !== 'undefined') {
-                OneSignalDeferred.push(function(OS) {
-                    OS.User.PushSubscription.optedIn.then ? 
-                        OS.User.PushSubscription.optedIn.then(function(opted){
-                            if (!opted) OS.User.PushSubscription.optIn();
-                            else showToast('Notifications OneSignal actives !');
-                        }) : OS.User.PushSubscription.optIn();
-                });
-            }
+            showToast('Canal Ntfy: gtm-coloc-appart48 — Installez l app Ntfy !');
         }
 
         /* ── SONS ── */
@@ -651,20 +618,8 @@
         function setIdentity(nom) {
             localStorage.setItem('gtm-coloc-identity', nom);
             document.getElementById('identity-modal').classList.add('hidden');
-            setOSTag(nom);
             updateHeaderIdentity(nom);
             showToast('Bienvenue ' + nom + ' !');
-            /* Demande permission notifications OneSignal */
-            OneSignalDeferred.push(function(OS) {
-                OS.User.PushSubscription.optIn();
-            });
-        }
-
-        function setOSTag(nom) {
-            /* Tag OneSignal pour ciblage individuel */
-            OneSignalDeferred.push(function(OS) {
-                OS.User.addTags({ nom: nom, app: 'gtm-coloc' });
-            });
         }
 
         function updateHeaderIdentity(nom) {

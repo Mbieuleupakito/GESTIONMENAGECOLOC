@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
     <link rel="apple-touch-icon" href="/icon-192.png">
     <meta name="theme-color" content="#1d4ed8">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GestionColoc">
@@ -659,9 +660,12 @@
                 /* Premier lancement — affiche le modal */
                 document.getElementById('identity-modal').classList.remove('hidden');
             } else {
-                /* Identite connue — met a jour le tag OneSignal */
-                setOSTag(nom);
+                /* Identite connue — renouvelle abonnement VAPID si besoin */
                 updateHeaderIdentity(nom);
+                if (Notification.permission === 'granted') {
+                    subscribeToPush(nom);
+                }
+                updateNotifStatusUI();
             }
         }
 

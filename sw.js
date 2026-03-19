@@ -11,7 +11,7 @@ var HEADERS = {
     'Authorization': 'Bearer ' + SUPABASE_KEY,
     'Content-Type': 'application/json'
 };
-var VAPID_PUBLIC_KEY = 'YUUaVz8eYW-rK1Afn9H8mY6rdegnemCGf68vjSUTJMCx02Omc2TYzFjMPIOJ2IA_Jh5WMsqo23NXragzp6ceBg';
+var VAPID_PUBLIC_KEY = 'BO9fd3R7mU3GdU4ExabEU1PO3k9wmp1NLQMAvk7JVuLrq8znQQAUkQ5sUaf8FZUoBUYr-jcDmQDrAJORbOPf2Yg';
 
 self.addEventListener('install', function() { self.skipWaiting(); });
 self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });

@@ -256,7 +256,7 @@
 
         /* Envoie une notification via Edge Function VAPID */
         function sendVapidNotification(title, body, targets, urgent) {
-            return fetch(SUPABASE_URL + '/functions/v1/send-push', {
+            return fetch(SUPABASE_URL + '/functions/v1/send-push-ts', {
                 method: 'POST',
                 headers: Object.assign({}, HEADERS),
                 body: JSON.stringify({

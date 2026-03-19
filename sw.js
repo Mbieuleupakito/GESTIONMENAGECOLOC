@@ -1,30 +1,59 @@
 /* ================================================================
    SERVICE WORKER — GTM Coloc
-   Gère les alertes automatiques du dimanche côté appareil.
-   Les vraies notifications cross-appareils passent par OneSignal.
+   Gère les notifications push VAPID natives
 ================================================================ */
 
-// Importe le Service Worker OneSignal
-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-
-const CACHE_NAME = 'gtm-coloc-v5';
-const SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
-const HEADERS = {
+var CACHE_NAME = 'gtm-coloc-v6';
+var SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
+var HEADERS = {
     'apikey': SUPABASE_KEY,
     'Authorization': 'Bearer ' + SUPABASE_KEY,
     'Content-Type': 'application/json'
 };
+var VAPID_PUBLIC_KEY = 'YUUaVz8eYW-rK1Afn9H8mY6rdegnemCGf68vjSUTJMCx02Omc2TYzFjMPIOJ2IA_Jh5WMsqo23NXragzp6ceBg';
 
 self.addEventListener('install', function() { self.skipWaiting(); });
 self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
 
+/* ── RÉCEPTION NOTIFICATION PUSH ── */
+self.addEventListener('push', function(event) {
+    if (!event.data) return;
+    var data = event.data.json();
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'GTM Coloc', {
+            body: data.body || '',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            vibrate: data.urgent ? [500,200,500,200,500] : [100,50,100],
+            requireInteraction: data.urgent || false,
+            tag: data.tag || 'gtm-coloc-' + Date.now(),
+            data: { url: '/' }
+        })
+    );
+});
+
+/* ── CLIC SUR NOTIFICATION ── */
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then(function(list) {
+            for (var i = 0; i < list.length; i++) {
+                if ('focus' in list[i]) return list[i].focus();
+            }
+            return clients.openWindow('/');
+        })
+    );
+});
+
+/* ── MESSAGES DEPUIS L'APP ── */
 self.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'SCHEDULE_CHECKS') {
         startCheckLoop();
     }
 });
 
+/* ── ALERTES AUTOMATIQUES DIMANCHE ── */
 function startCheckLoop() {
     checkAndAct();
     setInterval(checkAndAct, 60 * 1000);
@@ -34,32 +63,29 @@ function checkAndAct() {
     var now = new Date();
     var day = now.getDay();
     var hour = now.getHours();
-    var minute = now.getMinutes();
+    var min = now.getMinutes();
     if (day !== 0) return;
-    var isAlert1 = hour === 15 && minute === 0;
-    var isAlert2 = hour === 20 && minute === 0;
-    var isAlert3 = hour === 23 && minute === 30;
-    var isMalus  = hour === 23 && minute === 59;
-    if (isAlert1 || isAlert2 || isAlert3) handleAlert(isAlert1, isAlert2, isAlert3, now);
-    if (isMalus) handleAutoMalus(now);
+    if (hour === 15 && min === 0) sendLocalAlert('alert15');
+    if (hour === 20 && min === 0) sendLocalAlert('alert20');
+    if (hour === 23 && min === 30) sendLocalAlert('alert2330');
+    if (hour === 23 && min === 59) handleAutoMalus(now);
 }
 
-function handleAlert(a1, a2, a3, now) {
-    var key = 'alert_' + now.toISOString().slice(0, 15);
+function sendLocalAlert(key) {
     caches.open(CACHE_NAME).then(function(cache) {
         cache.match(key).then(function(already) {
             if (already) return;
             cache.put(key, new Response('sent'));
             getUnvalidated().then(function(names) {
                 if (!names.length) return;
-                var title, body;
-                if (a1) { title = 'Rappel 15h — Mission non faite !'; body = names.join(', ') + ' n\'ont pas valide !'; }
-                else if (a2) { title = 'Rappel 20h — Plus que quelques heures !'; body = names.join(', ') + ' — Validez avant ce soir.'; }
-                else { title = 'DERNIERE CHANCE 23h30 !'; body = names.join(', ') + ' — Validez avant minuit ou perdez 2 points !'; }
-                self.registration.showNotification(title, {
-                    body: body, icon: '/icon-192.png', vibrate: [200,100,200],
-                    tag: key, requireInteraction: true,
-                    actions: [{action:'open', title:'Valider maintenant'}]
+                var msgs = {
+                    alert15: ['Rappel 15h !', names.join(', ') + ' n ont pas valide !'],
+                    alert20: ['Rappel 20h !', 'Plus que quelques heures — ' + names.join(', ')],
+                    alert2330: ['DERNIERE CHANCE 23h30 !', names.join(', ') + ' — Validez avant minuit !']
+                };
+                self.registration.showNotification(msgs[key][0], {
+                    body: msgs[key][1], icon: '/icon-192.png',
+                    vibrate: [300,100,300], requireInteraction: true, tag: key
                 });
             });
         });
@@ -67,8 +93,8 @@ function handleAlert(a1, a2, a3, now) {
 }
 
 function handleAutoMalus(now) {
-    var weekNum = getWeekNumber();
-    var key = 'malus_week_' + weekNum;
+    var wn = getWeekNumber();
+    var key = 'malus_' + wn;
     caches.open(CACHE_NAME).then(function(cache) {
         cache.match(key).then(function(already) {
             if (already) return;
@@ -76,12 +102,12 @@ function handleAutoMalus(now) {
             fetch(SUPABASE_URL + '/rest/v1/scores?select=id,name,points,last_week_validated,tache_en_retard', {headers: HEADERS})
             .then(function(r) { return r.json(); })
             .then(function(users) {
-                var nv = users.filter(function(u) { return u.last_week_validated !== weekNum && !u.tache_en_retard; });
+                var nv = users.filter(function(u) { return u.last_week_validated !== wn && !u.tache_en_retard; });
                 nv.forEach(function(user) {
                     fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
                         method: 'PATCH',
                         headers: Object.assign({}, HEADERS, {'Prefer':'return=minimal'}),
-                        body: JSON.stringify({points: Math.max(0, user.points-2), tache_en_retard: weekNum, retard_valide: false})
+                        body: JSON.stringify({points: Math.max(0, user.points-2), tache_en_retard: wn, retard_valide: false})
                     });
                     fetch(SUPABASE_URL + '/rest/v1/logs', {
                         method: 'POST',
@@ -89,12 +115,6 @@ function handleAutoMalus(now) {
                         body: JSON.stringify({name: user.name, points_gagnes: -2, type: 'malus_auto'})
                     });
                 });
-                if (nv.length) {
-                    self.registration.showNotification('Malus automatique applique !', {
-                        body: nv.map(function(u){return u.name;}).join(', ') + ' ont perdu 2 points.',
-                        icon: '/icon-192.png', vibrate: [300,100,300], tag: key
-                    });
-                }
             });
         });
     });
@@ -117,13 +137,3 @@ function getWeekNumber() {
     monday.setHours(0, 0, 0, 0);
     return Math.floor(Math.floor((monday - startOfYear) / 86400000) / 7) + 1;
 }
-
-self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
-    event.waitUntil(clients.matchAll({type:'window'}).then(function(list) {
-        for (var i=0; i<list.length; i++) {
-            if ('focus' in list[i]) return list[i].focus();
-        }
-        return clients.openWindow('/');
-    }));
-});

@@ -220,9 +220,19 @@
                 return Promise.resolve();
             }
             return navigator.serviceWorker.ready.then(function(reg) {
-                return reg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                /* Désabonne d'abord l'ancien abonnement si existant */
+                return reg.pushManager.getSubscription().then(function(existingSub) {
+                    if (existingSub) {
+                        return existingSub.unsubscribe().then(function() {
+                            console.log('Ancien abonnement supprime');
+                        });
+                    }
+                }).then(function() {
+                    /* Crée un nouvel abonnement avec les nouvelles clés */
+                    return reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
                 });
             }).then(function(sub) {
                 var subJson = sub.toJSON();

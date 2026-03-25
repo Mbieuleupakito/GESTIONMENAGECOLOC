@@ -771,8 +771,10 @@
             dbDelete('task_overrides', ['nom=eq.'+nom+'_extra', 'semaine=eq.'+wn]).then(function() {
                 delete taskOverridesCache[nom + '_extra'];
                 showToast('Tache bonus de ' + nom + ' supprimee');
-                buildTaskOverrideList();
-                window._lastUsers && renderTasks(window._lastUsers);
+                loadTaskOverrides().then(function() {
+                    buildTaskOverrideList();
+                    window._lastUsers && renderTasks(window._lastUsers);
+                });
             });
         }
 
@@ -810,9 +812,12 @@
             }));
             Promise.all(promises).then(function() {
                 showToast('Taches de ' + nom + ' sauvegardees ! ✅');
-                buildTaskOverrideList();
-                buildTaskHistory();
-                window._lastUsers && renderTasks(window._lastUsers);
+                /* Recharge le cache depuis Supabase avant de re-rendre */
+                loadTaskOverrides().then(function() {
+                    buildTaskOverrideList();
+                    buildTaskHistory();
+                    window._lastUsers && renderTasks(window._lastUsers);
+                });
             });
         }
 

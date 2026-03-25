@@ -376,13 +376,11 @@
         }
         function getMission(colocIdx, weekNum) {
             var nom = colocs[colocIdx];
-            /* Vérifie si un override admin existe pour cette semaine */
-            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
-            if (overrides[nom]) return overrides[nom];
-            /* Sinon rotation intelligente — pas 2 douches/WC de suite */
-            var seq = ROTATION[colocIdx];
-            var pos = (weekNum - 1) % 5;
-            return missions[seq[pos]];
+            /* Vérifie si un override admin existe pour la semaine actuelle */
+            if (weekNum === getWeekNumber() && taskOverridesCache[nom]) {
+                return taskOverridesCache[nom];
+            }
+            return getMissionRaw(colocIdx, weekNum);
         }
 
         /* ── MESSAGERIE COLOC ── */
@@ -484,6 +482,7 @@
 
         /* ── FETCH DATA ── */
         function fetchAllData() {
+            loadTaskOverrides().then(function() {
             dbGet('scores','*',[],'points.desc').then(function(users) {
                 if (!users || !users.length) return;
                 dbGet('logs','*',[],'created_at.desc',10).then(function(logs) {
@@ -507,10 +506,12 @@
                     buildTaskOverrideList();
                     buildTaskHistory();
                     buildMsgTargets();
+                    window._lastUsers = users;
                     renderTasks(users);
                     renderChart(users);
                 });
-            });
+            }); /* end dbGet scores */
+            }); /* end loadTaskOverrides */
         }
 
         /* ── GRAPHIQUE ── */
@@ -631,36 +632,122 @@
             return missions[seq[pos]];
         }
 
+        /* Cache local des overrides pour eviter trop de requetes */
+        var taskOverridesCache = {};
+
+        function loadTaskOverrides() {
+            var wn = getWeekNumber();
+            return dbGet('task_overrides', '*', ['semaine=eq.'+wn]).then(function(rows) {
+                taskOverridesCache = {};
+                (rows || []).forEach(function(r) {
+                    taskOverridesCache[r.nom] = r.mission;
+                });
+                return taskOverridesCache;
+            });
+        }
+
         function buildTaskOverrideList() {
             var c = document.getElementById('task-override-list');
             if (!c) return;
             var week = getWeekNumber();
-            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
             c.innerHTML = colocs.map(function(nom, i) {
-                var currentMission = overrides[nom] || getMission(i, week);
-                return '<div class="bg-white dark:bg-slate-900 rounded-xl p-2 flex flex-col gap-1">' +
+                var currentMission = taskOverridesCache[nom] || getMissionRaw(i, week);
+                var extraMission = taskOverridesCache[nom + '_extra'] || '';
+                var hasOverride = !!taskOverridesCache[nom];
+                var hasExtra = !!extraMission;
+                return '<div class="bg-white dark:bg-slate-900 rounded-xl p-2 flex flex-col gap-2 border border-slate-100 dark:border-slate-700">' +
+
+                    /* En-tête */
+                    '<div class="flex justify-between items-center">' +
                     '<p class="text-[9px] font-black text-blue-500 uppercase">' + nom + '</p>' +
-                    '<select onchange="overrideTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="text-[10px] p-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold">' +
+                    '<div class="flex gap-1">' +
+                    (hasOverride ? '<span class="text-[8px] text-orange-500 font-bold">✏️ Modifie</span>' : '<span class="text-[8px] text-slate-400">Auto</span>') +
+                    (hasExtra ? '<span class="text-[8px] text-purple-500 font-bold ml-1">+Bonus</span>' : '') +
+                    '</div>' +
+                    '</div>' +
+
+                    /* Tâche principale */
+                    '<div>' +
+                    '<p class="text-[8px] text-slate-400 font-bold mb-1">Tache principale :</p>' +
+                    '<select onchange="overrideTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="w-full text-[10px] p-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-bold">' +
                     allTasks.map(function(m) {
                         return '<option value="' + m + '"' + (m === currentMission ? ' selected' : '') + '>' + m + '</option>';
                     }).join('') +
                     '</select>' +
+                    '</div>' +
+
+                    /* Tâche bonus */
+                    '<div>' +
+                    '<p class="text-[8px] text-purple-500 font-bold mb-1">+ Tache bonus (optionnel) :</p>' +
+                    '<div class="flex gap-1">' +
+                    '<select onchange="overrideExtraTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="flex-1 text-[10px] p-1 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-slate-800 font-bold">' +
+                    '<option value="">— Aucune tache bonus —</option>' +
+                    allTasks.map(function(m) {
+                        return '<option value="' + m + '"' + (m === extraMission ? ' selected' : '') + '>' + m + '</option>';
+                    }).join('') +
+                    '</select>' +
+                    (hasExtra ? '<button onclick="removeExtraTask(this.dataset.nom)" data-nom="' + nom + '" class="bg-red-500 text-white px-2 rounded-lg text-[9px] font-black">✕</button>' : '') +
+                    '</div>' +
+                    '</div>' +
+
                     '</div>';
             }).join('');
         }
 
         function overrideTask(nom, mission) {
-            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
-            overrides[nom] = mission;
-            localStorage.setItem('task-overrides', JSON.stringify(overrides));
-            showToast('Tache de ' + nom + ' changee en : ' + mission);
-            fetchAllData();
+            var wn = getWeekNumber();
+            /* Upsert dans Supabase */
+            fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
+                method: 'POST',
+                headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
+                body: JSON.stringify({ nom: nom, mission: mission, semaine: wn })
+            }).then(function() {
+                taskOverridesCache[nom] = mission;
+                showToast('Tache de ' + nom + ' : ' + mission.slice(0,20) + ' ✅');
+                buildTaskOverrideList();
+                buildTaskHistory();
+                renderTasks(window._lastUsers || []);
+            });
+        }
+
+        function overrideExtraTask(nom, mission) {
+            var wn = getWeekNumber();
+            if (!mission) {
+                removeExtraTask(nom);
+                return;
+            }
+            /* Sauvegarde la tache bonus dans Supabase avec clé nom+"_extra" */
+            fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
+                method: 'POST',
+                headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
+                body: JSON.stringify({ nom: nom + '_extra', mission: mission, semaine: wn })
+            }).then(function() {
+                taskOverridesCache[nom + '_extra'] = mission;
+                showToast('Tache bonus de ' + nom + ' : ' + mission.slice(0,20) + ' ✅');
+                buildTaskOverrideList();
+                window._lastUsers && renderTasks(window._lastUsers);
+            });
+        }
+
+        function removeExtraTask(nom) {
+            var wn = getWeekNumber();
+            dbDelete('task_overrides', ['nom=eq.'+nom+'_extra', 'semaine=eq.'+wn]).then(function() {
+                delete taskOverridesCache[nom + '_extra'];
+                showToast('Tache bonus de ' + nom + ' supprimee');
+                buildTaskOverrideList();
+                window._lastUsers && renderTasks(window._lastUsers);
+            });
         }
 
         function resetTaskOverrides() {
-            localStorage.removeItem('task-overrides');
-            showToast('Taches remises en rotation automatique !');
-            fetchAllData();
+            var wn = getWeekNumber();
+            dbDelete('task_overrides', ['semaine=eq.'+wn]).then(function() {
+                taskOverridesCache = {};
+                showToast('Taches remises en rotation automatique !');
+                buildTaskOverrideList();
+                buildTaskHistory();
+                fetchAllData();
+            });
         }
 
         /* ── NOTIF CIBLÉE ADMIN ── */

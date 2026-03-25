@@ -688,14 +688,37 @@
                     '</select>' +
                     (hasExtra ? '<button onclick="removeExtraTask(this.dataset.nom)" data-nom="' + nom + '" class="bg-red-500 text-white px-2 rounded-lg text-[9px] font-black">✕</button>' : '') +
                     '</div>' +
-                    '</div>' +
+                    /* Bouton sauvegarder */
+                    '<button onclick="saveAllForColoc(this.dataset.nom)" data-nom="' + nom + '" class="w-full bg-green-600 text-white py-1.5 rounded-xl text-[9px] font-black active:scale-95 transition-all mt-1">💾 Sauvegarder</button>' +
 
                     '</div>';
             }).join('');
         }
 
+        /* Cache temporaire avant sauvegarde */
+        var taskPendingChanges = {};
+
         function overrideTask(nom, mission) {
+            /* Stocke en attente — pas encore sauvegarde */
+            taskPendingChanges[nom] = mission;
+            /* Marque visuellement le bouton sauvegarder */
+            var btns = document.querySelectorAll('[data-nom="' + nom + '"]');
+            btns.forEach(function(btn) {
+                if (btn.tagName === 'BUTTON' && btn.textContent.indexOf('Sauvegarder') !== -1) {
+                    btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-orange-500');
+                    btn.textContent = '💾 Sauvegarder *';
+                }
+            });
+        }
+
+        function saveTaskOverride(nom) {
             var wn = getWeekNumber();
+            var mission = taskPendingChanges[nom];
+            if (!mission) {
+                showToast('Aucun changement a sauvegarder pour ' + nom);
+                return;
+            }
             /* Upsert dans Supabase */
             fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
                 method: 'POST',
@@ -703,27 +726,41 @@
                 body: JSON.stringify({ nom: nom, mission: mission, semaine: wn })
             }).then(function() {
                 taskOverridesCache[nom] = mission;
-                showToast('Tache de ' + nom + ' : ' + mission.slice(0,20) + ' ✅');
+                delete taskPendingChanges[nom];
+                showToast('Tache de ' + nom + ' sauvegardee ! ✅');
                 buildTaskOverrideList();
                 buildTaskHistory();
-                renderTasks(window._lastUsers || []);
+                window._lastUsers && renderTasks(window._lastUsers);
             });
         }
 
         function overrideExtraTask(nom, mission) {
+            if (!mission) { removeExtraTask(nom); return; }
+            /* Stocke en attente */
+            taskPendingChanges[nom + '_extra'] = mission;
+            /* Marque le bouton sauvegarder */
+            var btns = document.querySelectorAll('[data-nom="' + nom + '"]');
+            btns.forEach(function(btn) {
+                if (btn.tagName === 'BUTTON' && btn.textContent.indexOf('Sauvegarder') !== -1) {
+                    btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-orange-500');
+                    btn.textContent = '💾 Sauvegarder *';
+                }
+            });
+        }
+
+        function saveExtraTask(nom) {
             var wn = getWeekNumber();
-            if (!mission) {
-                removeExtraTask(nom);
-                return;
-            }
-            /* Sauvegarde la tache bonus dans Supabase avec clé nom+"_extra" */
+            var mission = taskPendingChanges[nom + '_extra'];
+            if (!mission) return;
             fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
                 method: 'POST',
                 headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
                 body: JSON.stringify({ nom: nom + '_extra', mission: mission, semaine: wn })
             }).then(function() {
                 taskOverridesCache[nom + '_extra'] = mission;
-                showToast('Tache bonus de ' + nom + ' : ' + mission.slice(0,20) + ' ✅');
+                delete taskPendingChanges[nom + '_extra'];
+                showToast('Bonus de ' + nom + ' sauvegarde ! ✅');
                 buildTaskOverrideList();
                 window._lastUsers && renderTasks(window._lastUsers);
             });
@@ -735,6 +772,46 @@
                 delete taskOverridesCache[nom + '_extra'];
                 showToast('Tache bonus de ' + nom + ' supprimee');
                 buildTaskOverrideList();
+                window._lastUsers && renderTasks(window._lastUsers);
+            });
+        }
+
+        function saveAllForColoc(nom) {
+            var hasMain = !!taskPendingChanges[nom];
+            var hasExtra = !!taskPendingChanges[nom + '_extra'];
+            if (!hasMain && !hasExtra) {
+                showToast('Aucun changement pour ' + nom);
+                return;
+            }
+            var promises = [];
+            if (hasMain) promises.push(new Promise(function(resolve) {
+                var wn = getWeekNumber();
+                fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
+                    method: 'POST',
+                    headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
+                    body: JSON.stringify({ nom: nom, mission: taskPendingChanges[nom], semaine: wn })
+                }).then(function() {
+                    taskOverridesCache[nom] = taskPendingChanges[nom];
+                    delete taskPendingChanges[nom];
+                    resolve();
+                });
+            }));
+            if (hasExtra) promises.push(new Promise(function(resolve) {
+                var wn = getWeekNumber();
+                fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
+                    method: 'POST',
+                    headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
+                    body: JSON.stringify({ nom: nom + '_extra', mission: taskPendingChanges[nom + '_extra'], semaine: wn })
+                }).then(function() {
+                    taskOverridesCache[nom + '_extra'] = taskPendingChanges[nom + '_extra'];
+                    delete taskPendingChanges[nom + '_extra'];
+                    resolve();
+                });
+            }));
+            Promise.all(promises).then(function() {
+                showToast('Taches de ' + nom + ' sauvegardees ! ✅');
+                buildTaskOverrideList();
+                buildTaskHistory();
                 window._lastUsers && renderTasks(window._lastUsers);
             });
         }

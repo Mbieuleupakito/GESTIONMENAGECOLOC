@@ -163,6 +163,19 @@
                 <button onclick="sendTargetedNotif()" class="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs">📨 Envoyer via OneSignal</button>
             </div>
 
+            <!-- HISTORIQUE DES TÂCHES -->
+            <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
+                <p class="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-3">📋 Historique 8 semaines</p>
+                <div id="task-history" class="overflow-x-auto text-[8px]"></div>
+            </div>
+
+            <!-- GESTION MANUELLE DES TÂCHES -->
+            <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
+                <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-3">⚙️ Gérer les tâches manuellement</p>
+                <p class="text-[9px] text-slate-500 mb-3">Modifie la tâche d'un colocataire pour cette semaine.</p>
+                <div class="space-y-2" id="task-override-list"></div>
+            </div>
+
             <!-- TESTS -->
             <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
                 <p class="text-[9px] font-black text-red-500 uppercase tracking-widest mb-3">🧪 Tests</p>
@@ -174,8 +187,12 @@
             </div>
 
             <!-- Changer d'identite -->
-            <button onclick="changeIdentity(); closeAdmin();" class="w-full bg-slate-500 text-white py-2 rounded-xl font-bold text-xs mb-4">
+            <button onclick="changeIdentity(); closeAdmin();" class="w-full bg-slate-500 text-white py-2 rounded-xl font-bold text-xs mb-2">
                 👤 Changer d'identite
+            </button>
+            <!-- Reset taches manuelles -->
+            <button onclick="resetTaskOverrides(); closeAdmin();" class="w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs mb-4">
+                🔄 Remettre rotation automatique
             </button>
 
             <div class="grid grid-cols-2 gap-4">
@@ -294,7 +311,27 @@
 
         /* ── DONNÉES ── */
         var colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
-        var missions = ["🚿 Douche Gauche", "🚽 WC Droit", "🧹 Cuisine + Salon", "🧻 WC Gauche", "🚿 Douche Droite"];
+        var missions = [
+            "🚿 Douche Gauche",
+            "🚽 WC Droit",
+            "🧹 Cuisine + Salon",
+            "🧻 WC Gauche",
+            "🚿 Douche Droite"
+        ];
+
+        /* Toutes les tâches disponibles pour l'admin */
+        var allTasks = [
+            "🚿 Douche Gauche",
+            "🚿 Douche Droite",
+            "🚽 WC Droit",
+            "🧻 WC Gauche",
+            "🧹 Cuisine + Salon",
+            "🧹 Balayage Salon + Couloir",
+            "🪣 Lavage Salon",
+            "🪣 Lavage Couloir",
+            "🪣 Lavage Cuisine",
+            "🏠 Ménage Général Complet"
+        ];
         var myChart;
         var selectedMsgTargets = [];
         var selectedNotifTargets = [];
@@ -338,7 +375,11 @@
             return Math.floor(Math.floor((monday - startOfYear) / 86400000) / 7) + 1;
         }
         function getMission(colocIdx, weekNum) {
-            /* Rotation intelligente — pas 2 douches/WC de suite */
+            var nom = colocs[colocIdx];
+            /* Vérifie si un override admin existe pour cette semaine */
+            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
+            if (overrides[nom]) return overrides[nom];
+            /* Sinon rotation intelligente — pas 2 douches/WC de suite */
             var seq = ROTATION[colocIdx];
             var pos = (weekNum - 1) % 5;
             return missions[seq[pos]];
@@ -463,6 +504,8 @@
                         return '<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-3 rounded-2xl text-xs"><div class="text-left"><span class="font-bold">'+u.name+' ('+u.points+' pts)</span>'+r+'</div><button onclick="applyMalus(\''+u.id+'\',\''+u.name+'\','+u.points+')" class="bg-orange-600 text-white px-3 py-1 rounded-lg">-2 PTS</button></div>';
                     }).join('');
                     buildNotifTargets(users);
+                    buildTaskOverrideList();
+                    buildTaskHistory();
                     buildMsgTargets();
                     renderTasks(users);
                     renderChart(users);
@@ -538,6 +581,86 @@
                 dbDelete('logs',['id=neq.0']);
                 location.reload();
             });
+        }
+
+        /* ── GESTION MANUELLE DES TÂCHES ── */
+        /* ── HISTORIQUE DES TÂCHES (8 semaines) ── */
+        function buildTaskHistory() {
+            var c = document.getElementById('task-history');
+            if (!c) return;
+            var week = getWeekNumber();
+            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
+
+            /* Génère tableau des 8 dernières semaines */
+            var html = '<table style="border-collapse:collapse;width:100%">';
+
+            /* En-tête */
+            html += '<tr><th style="padding:3px 4px;text-align:left;font-weight:900;color:#6366f1">Coloc</th>';
+            for (var w = week - 7; w <= week; w++) {
+                var label = w === week ? '<b>S' + w + '★</b>' : 'S' + w;
+                html += '<th style="padding:3px 4px;text-align:center;color:#94a3b8">' + label + '</th>';
+            }
+            html += '</tr>';
+
+            /* Lignes par coloc */
+            colocs.forEach(function(nom, i) {
+                html += '<tr style="border-top:1px solid #e2e8f0">';
+                html += '<td style="padding:3px 4px;font-weight:900;color:#1e293b">' + nom + '</td>';
+                for (var w = week - 7; w <= week; w++) {
+                    var m = w === week && overrides[nom] ? overrides[nom] : getMissionRaw(i, w);
+                    /* Couleur selon type */
+                    var color = '#64748b';
+                    if (m.indexOf('Douche') !== -1) color = '#3b82f6';
+                    else if (m.indexOf('WC') !== -1) color = '#8b5cf6';
+                    else if (m.indexOf('Cuisine') !== -1 || m.indexOf('Salon') !== -1 || m.indexOf('Couloir') !== -1) color = '#16a34a';
+                    else if (m.indexOf('age') !== -1) color = '#f59e0b';
+                    var short = m.replace('🚿','').replace('🚽','').replace('🧻','').replace('🧹','').replace('🪣','').replace('🏠','').trim().slice(0, 10);
+                    var bg = w === week ? '#eff6ff' : 'transparent';
+                    html += '<td style="padding:3px 4px;text-align:center;color:' + color + ';background:' + bg + ';font-weight:700">' + short + '</td>';
+                }
+                html += '</tr>';
+            });
+            html += '</table>';
+            c.innerHTML = html;
+        }
+
+        /* getMission sans override pour l'historique */
+        function getMissionRaw(colocIdx, weekNum) {
+            var seq = ROTATION[colocIdx];
+            var pos = (weekNum - 1) % 5;
+            return missions[seq[pos]];
+        }
+
+        function buildTaskOverrideList() {
+            var c = document.getElementById('task-override-list');
+            if (!c) return;
+            var week = getWeekNumber();
+            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
+            c.innerHTML = colocs.map(function(nom, i) {
+                var currentMission = overrides[nom] || getMission(i, week);
+                return '<div class="bg-white dark:bg-slate-900 rounded-xl p-2 flex flex-col gap-1">' +
+                    '<p class="text-[9px] font-black text-blue-500 uppercase">' + nom + '</p>' +
+                    '<select onchange="overrideTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="text-[10px] p-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold">' +
+                    allTasks.map(function(m) {
+                        return '<option value="' + m + '"' + (m === currentMission ? ' selected' : '') + '>' + m + '</option>';
+                    }).join('') +
+                    '</select>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function overrideTask(nom, mission) {
+            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
+            overrides[nom] = mission;
+            localStorage.setItem('task-overrides', JSON.stringify(overrides));
+            showToast('Tache de ' + nom + ' changee en : ' + mission);
+            fetchAllData();
+        }
+
+        function resetTaskOverrides() {
+            localStorage.removeItem('task-overrides');
+            showToast('Taches remises en rotation automatique !');
+            fetchAllData();
         }
 
         /* ── NOTIF CIBLÉE ADMIN ── */

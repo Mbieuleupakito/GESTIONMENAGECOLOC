@@ -550,21 +550,32 @@
             dbGet('scores','*').then(function(all) {
                 var user = all.find(function(u){return u.name===nom;});
                 if (!user || user.last_week_validated===wn) return;
-                /* Les deux validations sont independantes */
                 var deja = all.filter(function(u){return u.last_week_validated===wn;}).length;
                 var pts = Math.max(1, 5-deja);
-                var upd = {points:user.points+pts, last_week_validated:wn};
-                /* Nettoie toujours le retard après validation */
-                upd.tache_en_retard = null;
-                upd.retard_valide = false;
-                dbUpdate('scores',upd,['id=eq.'+user.id]).then(function(){
+                var upd = {points:user.points+pts, last_week_validated:wn, tache_en_retard:null, retard_valide:false};
+                /* Update avec vérification */
+                var url = SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id;
+                fetch(url, {
+                    method: 'PATCH',
+                    headers: Object.assign({}, HEADERS, {'Prefer': 'return=representation'}),
+                    body: JSON.stringify(upd)
+                }).then(function(r) {
+                    return r.json();
+                }).then(function(data) {
+                    console.log('Update result:', JSON.stringify(data));
+                    if (!data || (Array.isArray(data) && data.length === 0)) {
+                        showToast('Erreur — reessaie !');
+                        return;
+                    }
                     dbInsert('logs',{name:nom,points_gagnes:pts,type:'validation'});
                     playValidationSound();
                     showToast(nom+' — +'+pts+' point'+(pts>1?'s':'')+' !');
-                    /* Notif OneSignal à tous les autres */
                     var mi = getMission(colocs.indexOf(nom), wn);
                     sendNtfyNotification('✅ '+nom+' a valide !', nom+' — '+mi+' est fait ! 💪', colocs.filter(function(c){return c!==nom;}), false);
                     fetchAllData();
+                }).catch(function(e) {
+                    console.error('addPoints error:', e);
+                    showToast('Erreur reseau — reessaie !');
                 });
             });
         }
@@ -1080,6 +1091,16 @@
             checkIdentity();
             checkMenageGeneral();
             fetchAllData();
+            /* Recharge les taches toutes les 15 secondes — tous les appareils voient les changements */
+            setInterval(function() {
+                loadTaskOverrides().then(function() {
+                    if (window._lastUsers) renderTasks(window._lastUsers);
+                });
+            }, 15000);
+            /* Recharge toutes les données toutes les 30 secondes */
+            setInterval(function() {
+                fetchAllData();
+            }, 30000);
         }
         init();
     </script>

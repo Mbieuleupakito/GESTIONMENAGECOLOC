@@ -537,7 +537,12 @@
                 var user = all.find(function(u){return u.name===nom;});
                 if (!user) return;
                 /* Nettoie complètement le retard */
-                dbUpdate('scores',{retard_valide:true, tache_en_retard:null},['id=eq.'+user.id]).then(function(){
+                var url = SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id;
+                fetch(url, {
+                    method: 'PATCH',
+                    headers: Object.assign({}, HEADERS, {'Prefer':'return=representation'}),
+                    body: JSON.stringify({retard_valide: true, tache_en_retard: null})
+                }).then(function(r){ return r.json(); }).then(function(){
                     dbInsert('logs',{name:nom,points_gagnes:0,type:'rattrapage'});
                     showToast(nom+' — Rattrapage valide !');
                     fetchAllData();
@@ -552,7 +557,7 @@
                 if (!user || user.last_week_validated===wn) return;
                 var deja = all.filter(function(u){return u.last_week_validated===wn;}).length;
                 var pts = Math.max(1, 5-deja);
-                var upd = {points:user.points+pts, last_week_validated:wn, tache_en_retard:null, retard_valide:false};
+                var upd = {points:user.points+pts, last_week_validated:wn};
                 /* Update avec vérification */
                 var url = SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id;
                 fetch(url, {

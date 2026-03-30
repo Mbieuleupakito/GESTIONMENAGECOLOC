@@ -1096,15 +1096,19 @@
             checkIdentity();
             checkMenageGeneral();
             fetchAllData();
-            /* Recharge les taches toutes les 15 secondes — tous les appareils voient les changements */
+            /* Recharge les taches toutes les 15 secondes — sauf si panel admin ouvert */
             setInterval(function() {
-                loadTaskOverrides().then(function() {
-                    if (window._lastUsers) renderTasks(window._lastUsers);
-                });
+                if (document.getElementById('admin-panel').classList.contains('hidden')) {
+                    loadTaskOverrides().then(function() {
+                        if (window._lastUsers) renderTasks(window._lastUsers);
+                    });
+                }
             }, 15000);
-            /* Recharge toutes les données toutes les 30 secondes */
+            /* Recharge toutes les données toutes les 30 secondes — sauf si panel admin ouvert */
             setInterval(function() {
-                fetchAllData();
+                if (document.getElementById('admin-panel').classList.contains('hidden')) {
+                    fetchAllData();
+                }
             }, 30000);
         }
         init();

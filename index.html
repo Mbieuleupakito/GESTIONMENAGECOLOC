@@ -14,12 +14,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GestionColoc">
-
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
-
     <style>
         ::-webkit-scrollbar{width:4px}
         ::-webkit-scrollbar-track{background:transparent}
@@ -73,16 +70,12 @@
                     <p class="text-sm font-bold opacity-90">Tout doit être lavé — pas seulement balayé ! Cuisine, salon, douches, WC : nettoyage complet.</p>
                 </div>
             </div>
-            <button id="menage-general-ok" onclick="validerMenageGeneral()" class="bg-white text-orange-600 font-black px-4 py-2 rounded-xl text-sm active:scale-95 shrink-0">
-                ✅ VALIDÉ
-            </button>
+            <button onclick="validerMenageGeneral()" class="bg-white text-orange-600 font-black px-4 py-2 rounded-xl text-sm active:scale-95 shrink-0">✅ VALIDÉ</button>
         </div>
     </div>
 
     <!-- MAIN -->
     <main id="main-grid" class="max-w-[1800px] mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
-
-        <!-- MISSIONS -->
         <div id="col-missions" class="lg:col-span-7">
             <div class="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 h-full flex flex-col">
                 <h2 class="font-black text-blue-600 dark:text-blue-400 mb-4 flex items-center text-lg lg:text-2xl uppercase italic shrink-0">
@@ -97,18 +90,14 @@
             </div>
         </div>
 
-        <!-- COLONNE DROITE -->
         <div id="col-right" class="lg:col-span-5">
-
-            <!-- MESSAGERIE COLOC -->
+            <!-- MESSAGERIE -->
             <div class="bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 shrink-0">
                 <h3 class="font-bold text-[10px] uppercase tracking-widest mb-3 opacity-60">💬 Message à la Coloc</h3>
                 <div id="msg-targets" class="grid grid-cols-3 gap-2 mb-3"></div>
                 <textarea id="msg-text" rows="2" placeholder="Ecris ton message ici..."
                     class="w-full text-xs p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 resize-none mb-3 font-medium focus:outline-none focus:border-blue-400"></textarea>
-                <button onclick="sendColocMessage()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">
-                    📨 Envoyer le message
-                </button>
+                <button onclick="sendColocMessage()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">📨 Envoyer le message</button>
             </div>
 
             <!-- PODIUM -->
@@ -145,34 +134,30 @@
             <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
                 <p class="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-3">📨 Notification ciblée</p>
                 <div id="notif-targets" class="grid grid-cols-3 gap-1 mb-3"></div>
-                <select id="notif-type" onchange="updateNotifPreview()"
-                    class="w-full text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 mb-2 font-bold">
-                    <option value="auto">🤖 Automatique (selon le jour)</option>
+                <select id="notif-type" onchange="updateNotifPreview()" class="w-full text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 mb-2 font-bold">
+                    <option value="auto">🤖 Automatique</option>
                     <option value="jours">📅 Rappel jours restants</option>
                     <option value="heures">⏰ Rappel heures restantes</option>
-                    <option value="urgent">🚨 URGENT — Dernière chance</option>
+                    <option value="urgent">🚨 URGENT</option>
                     <option value="custom">✏️ Message personnalisé</option>
                 </select>
                 <div id="custom-msg-box" class="hidden mb-2">
                     <input id="custom-msg" type="text" placeholder="Ton message..." oninput="updateNotifPreview()"
                         class="w-full text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 font-bold"/>
                 </div>
-                <div id="notif-preview" class="bg-white dark:bg-slate-900 rounded-xl p-3 mb-3 text-[10px] text-slate-500 border border-slate-200 dark:border-slate-700 italic">
-                    Selectionne des destinataires...
-                </div>
-                <button onclick="sendTargetedNotif()" class="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs">📨 Envoyer via OneSignal</button>
+                <div id="notif-preview" class="bg-white dark:bg-slate-900 rounded-xl p-3 mb-3 text-[10px] text-slate-500 border border-slate-200 dark:border-slate-700 italic">Selectionne des destinataires...</div>
+                <button onclick="sendTargetedNotif()" class="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs">📨 Envoyer</button>
             </div>
 
-            <!-- HISTORIQUE DES TÂCHES -->
+            <!-- HISTORIQUE -->
             <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
                 <p class="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-3">📋 Historique 8 semaines</p>
                 <div id="task-history" class="overflow-x-auto text-[8px]"></div>
             </div>
 
-            <!-- GESTION MANUELLE DES TÂCHES -->
+            <!-- GESTION TÂCHES -->
             <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 mb-4 text-left">
-                <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-3">⚙️ Gérer les tâches manuellement</p>
-                <p class="text-[9px] text-slate-500 mb-3">Modifie la tâche d'un colocataire pour cette semaine.</p>
+                <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-3">⚙️ Gérer les tâches</p>
                 <div class="space-y-2" id="task-override-list"></div>
             </div>
 
@@ -182,19 +167,12 @@
                 <div class="space-y-2">
                     <button onclick="testAlarme()" class="w-full bg-red-600 text-white py-2 rounded-xl font-bold text-xs">🚨 Tester alarme</button>
                     <button onclick="testValidation()" class="w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs">✅ Tester notif validation</button>
-                    <button onclick="testRappel()" class="w-full bg-orange-500 text-white py-2 rounded-xl font-bold text-xs">🔔 Tester rappel non-validés</button>
+                    <button onclick="testRappel()" class="w-full bg-orange-500 text-white py-2 rounded-xl font-bold text-xs">🔔 Tester rappel</button>
                 </div>
             </div>
 
-            <!-- Changer d'identite -->
-            <button onclick="changeIdentity(); closeAdmin();" class="w-full bg-slate-500 text-white py-2 rounded-xl font-bold text-xs mb-2">
-                👤 Changer d'identite
-            </button>
-            <!-- Reset taches manuelles -->
-            <button onclick="resetTaskOverrides(); closeAdmin();" class="w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs mb-4">
-                🔄 Remettre rotation automatique
-            </button>
-
+            <button onclick="changeIdentity(); closeAdmin();" class="w-full bg-slate-500 text-white py-2 rounded-xl font-bold text-xs mb-2">👤 Changer d'identite</button>
+            <button onclick="resetTaskOverrides(); closeAdmin();" class="w-full bg-green-600 text-white py-2 rounded-xl font-bold text-xs mb-4">🔄 Remettre rotation automatique</button>
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="closeAdmin()" class="bg-slate-200 dark:bg-slate-700 py-3 rounded-xl font-bold text-sm">Fermer</button>
                 <button onclick="resetAllScores()" class="bg-red-600 text-white py-3 rounded-xl font-bold text-sm">RESET MOIS</button>
@@ -205,12 +183,12 @@
     <!-- TOAST -->
     <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold max-w-xs text-center"></div>
 
-    <!-- MODAL IDENTITE (premier lancement) -->
+    <!-- MODAL IDENTITE -->
     <div id="identity-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-sm p-8 rounded-[3rem] shadow-2xl text-center border-2 border-blue-500">
             <div class="text-5xl mb-4">🏠</div>
             <h3 class="text-blue-600 font-black text-xl mb-2 uppercase italic">GTM Coloc</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Qui es-tu ? Selectionne ton nom puis abonne-toi à ton canal Ntfy personnel.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Qui es-tu ? Selectionne ton nom puis abonne-toi a ton canal Ntfy.</p>
             <div class="grid grid-cols-1 gap-3 mb-4">
                 <button onclick="setIdentity('CHIESA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">CHIESA</button>
                 <button onclick="setIdentity('ISSA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">ISSA</button>
@@ -230,64 +208,38 @@
     </div>
 
     <script>
-        /* ── CONFIG ── */
         var SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
         var HEADERS = {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json'};
 
-        /* ── NTFY — 5 canaux individuels ──────────────────────────
-           Chaque coloc s'abonne à son canal personnel sur Ntfy.
-           Canal : gtm-[nom en minuscules]
-           Ex: CHIESA → gtm-chiesa
-        ──────────────────────────────────────────────────────── */
         var NTFY_BASE = 'https://ntfy.sh/';
         var NTFY_CHANNELS = {
-            'CHIESA':   'gtm-chiesa',
-            'ISSA':     'gtm-issa',
-            'PAKITO':   'gtm-pakito',
-            'GEOFFROY': 'gtm-geoffroy',
-            'ISMAEL':   'gtm-ismael',
-            'ALL':      'gtm-coloc-appart48'
+            'CHIESA': 'gtm-chiesa', 'ISSA': 'gtm-issa', 'PAKITO': 'gtm-pakito',
+            'GEOFFROY': 'gtm-geoffroy', 'ISMAEL': 'gtm-ismael', 'ALL': 'gtm-coloc-appart48'
         };
 
-        /* Envoie une notification Ntfy à des destinataires précis */
         function sendNtfyNotification(title, body, targets, urgent) {
             var priority = urgent ? '5' : '3';
-            var tags = urgent ? 'rotating_light,warning' : 'bell,house';
-
-            /* Nettoie le titre — supprime les emojis non compatibles HTTP */
-            function cleanTitle(t) {
-                return encodeURIComponent(t.replace(/[^\x00-\x7F]/g, '').trim() || 'GTM Coloc');
-            }
-
-            function ntfyPost(channel, t, b) {
-                /* Envoie via le body JSON pour éviter les problèmes d'encoding */
+            var tags = urgent ? ['rotating_light','warning'] : ['bell','house'];
+            function ntfyPost(channel) {
                 return fetch(NTFY_BASE + channel, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         topic: channel,
-                        title: t.replace(/[^\x00-\x7F]/g, '').trim() || 'GTM Coloc',
-                        message: b,
+                        title: title.replace(/[^\x00-\x7F]/g,'').trim() || 'GTM Coloc',
+                        message: body,
                         priority: parseInt(priority),
-                        tags: tags.split(',')
+                        tags: tags
                     })
                 }).catch(function(e){ console.error('Ntfy error', e); });
             }
-
-            /* Si pas de cibles ou ALL → envoie sur le canal global */
-            if (!targets || targets.length === 0) {
-                return ntfyPost(NTFY_CHANNELS['ALL'], title, body);
-            }
-
-            /* Sinon envoie sur le canal de chaque destinataire */
+            if (!targets || targets.length === 0) return ntfyPost(NTFY_CHANNELS['ALL']);
             return Promise.all(targets.map(function(nom) {
-                var channel = NTFY_CHANNELS[nom] || NTFY_CHANNELS['ALL'];
-                return ntfyPost(channel, title, body);
+                return ntfyPost(NTFY_CHANNELS[nom] || NTFY_CHANNELS['ALL']);
             }));
         }
 
-        /* ── FETCH SUPABASE ── */
         function dbGet(table, cols, filters, order, limit) {
             var url = SUPABASE_URL + '/rest/v1/' + table + '?select=' + (cols || '*');
             if (filters) filters.forEach(function(f){ url += '&' + f; });
@@ -309,47 +261,38 @@
             return fetch(url, {method:'DELETE', headers:Object.assign({},HEADERS,{'Prefer':'return=minimal'})}).catch(function(){});
         }
 
-        /* ── DONNÉES ── */
         var colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
-        var missions = [
-            "🚿 Douche Gauche",
-            "🚽 WC Droit",
-            "🧹 Cuisine + Salon",
-            "🧻 WC Gauche",
-            "🚿 Douche Droite"
+        var missions = ["🚿 Douche Gauche","🚽 WC Droit","🧹 Cuisine + Salon","🧻 WC Gauche","🚿 Douche Droite"];
+
+        /* ── LISTE COMPLÈTE DES TÂCHES ── */
+        var allTasks = [
+            /* Douches */
+            "🚿 Douche Gauche", "🚿 Douche Droite",
+            /* WC */
+            "🚽 WC Droit", "🧻 WC Gauche",
+            /* Cuisine */
+            "🧹 Cuisine + Salon", "🪣 Lavage Cuisine", "🧽 Nettoyage Cuisinière",
+            "📦 Nettoyage Micro-ondes", "🧊 Nettoyage Réfrigérateur", "🪣 Lavage Sol Cuisine",
+            /* Salon / Couloir */
+            "🧹 Balayage Salon + Couloir", "🪣 Lavage Salon", "🪣 Lavage Couloir",
+            /* Salle de bain */
+            "🪣 Lavage Salle de Bain", "🧴 Nettoyage Lavabo", "🛁 Nettoyage Baignoire",
+            /* Général */
+            "🏠 Ménage Général Complet", "🪟 Nettoyage Vitres", "🗑️ Vider les Poubelles",
+            "🧺 Lessive Commune", "🧹 Balayage Escalier", "🪣 Lavage Escalier",
+            /* Personnalisé — sera géré par saisie libre */
         ];
 
-        /* Toutes les tâches disponibles pour l'admin */
-        var allTasks = [
-            "🚿 Douche Gauche",
-            "🚿 Douche Droite",
-            "🚽 WC Droit",
-            "🧻 WC Gauche",
-            "🧹 Cuisine + Salon",
-            "🧹 Balayage Salon + Couloir",
-            "🪣 Lavage Salon",
-            "🪣 Lavage Couloir",
-            "🪣 Lavage Cuisine",
-            "🏠 Ménage Général Complet"
-        ];
         var myChart;
         var selectedMsgTargets = [];
         var selectedNotifTargets = [];
+        var taskOverridesCache = {};
+        var taskPendingChanges = {};
 
-        /* ── ROTATION INTELLIGENTE ──────────────────────────────────
-           Séquences fixes sur 5 semaines garantissant que personne
-           ne fait 2 douches ou 2 WC consécutifs.
-           Séquence par coloc : D-W-C-D-W / W-C-D-W-D / etc.
-        ──────────────────────────────────────────────────────── */
         var ROTATION = [
-            [0, 1, 2, 4, 3],  /* CHIESA:   DG, WD, C, DD, WG */
-            [1, 2, 4, 3, 0],  /* ISSA:     WD, C, DD, WG, DG */
-            [2, 4, 3, 0, 1],  /* PAKITO:   C, DD, WG, DG, WD */
-            [4, 3, 0, 1, 2],  /* GEOFFROY: DD, WG, DG, WD, C */
-            [3, 0, 1, 2, 4],  /* ISMAEL:   WG, DG, WD, C, DD */
+            [0,1,2,4,3], [1,2,4,3,0], [2,4,3,0,1], [4,3,0,1,2], [3,0,1,2,4]
         ];
 
-        /* ── TOAST ── */
         function showToast(msg, duration) {
             duration = duration || 3000;
             var t = document.getElementById('toast');
@@ -364,64 +307,54 @@
             }, duration);
         }
 
-        /* ── SEMAINE ── */
         function getWeekNumber() {
             var now = new Date();
             var startOfYear = new Date(now.getFullYear(), 0, 1);
             var day = now.getDay();
             var monday = new Date(now);
             monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-            monday.setHours(0, 0, 0, 0);
+            monday.setHours(0,0,0,0);
             return Math.floor(Math.floor((monday - startOfYear) / 86400000) / 7) + 1;
         }
+
+        function getMissionRaw(colocIdx, weekNum) {
+            return missions[ROTATION[colocIdx][(weekNum - 1) % 5]];
+        }
+
         function getMission(colocIdx, weekNum) {
             var nom = colocs[colocIdx];
-            /* Vérifie si un override admin existe pour la semaine actuelle */
-            if (weekNum === getWeekNumber() && taskOverridesCache[nom]) {
-                return taskOverridesCache[nom];
-            }
+            if (weekNum === getWeekNumber() && taskOverridesCache[nom]) return taskOverridesCache[nom];
             return getMissionRaw(colocIdx, weekNum);
         }
 
-        /* ── MESSAGERIE COLOC ── */
+        /* ── MESSAGERIE ── */
         function buildMsgTargets() {
             var c = document.getElementById('msg-targets');
             if (!c) return;
             var allSel = selectedMsgTargets.length === 0;
             var html = '<button onclick="toggleMsgTarget(\'ALL\')" class="col-span-3 ' +
-                (allSel ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300') +
+                (allSel?'bg-blue-600 text-white':'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300') +
                 ' py-2 px-3 rounded-xl text-[10px] font-black">📢 TOUTE LA COLOC</button>';
             colocs.forEach(function(nom) {
                 var sel = selectedMsgTargets.indexOf(nom) !== -1;
                 html += '<button onclick="toggleMsgTarget(\'' + nom + '\')" class="' +
-                    (sel ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300') +
+                    (sel?'bg-blue-600 text-white':'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300') +
                     ' py-2 px-1 rounded-xl text-[9px] font-black text-center">' + nom + '</button>';
             });
             c.innerHTML = html;
         }
-
         function toggleMsgTarget(nom) {
             if (nom === 'ALL') { selectedMsgTargets = []; }
-            else {
-                var idx = selectedMsgTargets.indexOf(nom);
-                if (idx === -1) selectedMsgTargets.push(nom);
-                else selectedMsgTargets.splice(idx, 1);
-            }
+            else { var idx = selectedMsgTargets.indexOf(nom); if (idx===-1) selectedMsgTargets.push(nom); else selectedMsgTargets.splice(idx,1); }
             buildMsgTargets();
         }
-
         function sendColocMessage() {
             var msg = document.getElementById('msg-text').value.trim();
             if (!msg) { showToast('Ecris un message !'); return; }
-            var targets = selectedMsgTargets.length === 0 ? colocs : selectedMsgTargets;
-            var targetLabel = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
-
-            /* Envoie via Ntfy — notification cross-appareils */
             var dest = selectedMsgTargets.length === 0 ? 'Toute la coloc' : selectedMsgTargets.join(', ');
-            sendNtfyNotification('💬 Message Coloc → ' + dest, msg, selectedMsgTargets, false);
-
+            sendNtfyNotification('Message Coloc -> ' + dest, msg, selectedMsgTargets, false);
             playValidationSound();
-            showToast('Message envoye a ' + targetLabel + ' !');
+            showToast('Message envoye a ' + dest + ' !');
             document.getElementById('msg-text').value = '';
             selectedMsgTargets = [];
             buildMsgTargets();
@@ -438,46 +371,44 @@
                 var mc = getMission(i, week);
                 var aRetard = user.tache_en_retard && !user.retard_valide;
                 var rattrapé = user.tache_en_retard && user.retard_valide;
+                var extraM = taskOverridesCache[nom + '_extra'] || '';
+                var extraHtml = extraM ? '<p class="text-[8px] text-purple-500 font-bold mt-1">➕ Bonus : ' + extraM + '</p>' : '';
+
                 if (aRetard) {
-                    var mr = getMission(i, user.tache_en_retard);
+                    var mr = getMissionRaw(i, user.tache_en_retard);
                     var okRetard = user.retard_valide === true;
                     var okActuelle = user.last_week_validated === week;
-                    /* Carte retard */
-                    c.innerHTML += '<div class="mission-card mission-retard p-3 lg:p-4 rounded-3xl border-2 flex justify-between items-center">' +
-                        '<div class="leading-tight">' +
-                        '<div class="flex items-center gap-2 mb-1">' +
+                    c.innerHTML +=
+                        '<div class="mission-card mission-retard p-3 lg:p-4 rounded-3xl border-2 flex justify-between items-center">' +
+                        '<div class="leading-tight"><div class="flex items-center gap-2 mb-1">' +
                         '<p class="text-[8px] font-black text-red-500 uppercase">' + nom + '</p>' +
-                        '<span class="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">⚠️ RETARD S' + user.tache_en_retard + '</span>' +
-                        '</div>' +
+                        '<span class="bg-red-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">RETARD S' + user.tache_en_retard + '</span></div>' +
                         '<p class="font-bold text-xs lg:text-base text-red-700 dark:text-red-300">' + mr + '</p>' +
-                        '<p class="text-[8px] text-red-400 font-bold mt-0.5">Tache en retard — a faire en priorite</p>' +
-                        '</div>' +
-                        (okRetard ?
-                            '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅ Rattrape</span>' :
-                            '<button onclick="validerRetard(\'' + nom + '\')" class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">RATTRAPER</button>'
-                        ) +
+                        '<p class="text-[8px] text-red-400 font-bold">A faire en priorite</p></div>' +
+                        (okRetard ? '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅ Rattrape</span>' :
+                            '<button onclick="validerRetard(\'' + nom + '\')" class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">RATTRAPER</button>') +
                         '</div>';
-                    /* Carte nouvelle tache de la semaine — disponible en meme temps */
-                    c.innerHTML += '<div class="mission-card bg-blue-50 dark:bg-blue-900/20 p-3 lg:p-4 rounded-3xl border-2 border-blue-300 dark:border-blue-700 flex justify-between items-center">' +
-                        '<div class="leading-tight">' +
-                        '<div class="flex items-center gap-2 mb-1">' +
+                    c.innerHTML +=
+                        '<div class="mission-card bg-blue-50 dark:bg-blue-900/20 p-3 lg:p-4 rounded-3xl border-2 border-blue-300 flex justify-between items-center">' +
+                        '<div class="leading-tight"><div class="flex items-center gap-2 mb-1">' +
                         '<p class="text-[8px] font-black text-blue-500 uppercase">' + nom + '</p>' +
-                        '<span class="bg-blue-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">SEMAINE ' + week + '</span>' +
-                        '</div>' +
-                        '<p class="font-bold text-xs lg:text-base dark:text-white">' + mc + '</p>' +
-                        '<p class="text-[8px] text-blue-400 font-bold mt-0.5">Nouvelle tache de la semaine</p>' +
-                        '</div>' +
-                        (okActuelle ?
-                            '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅</span>' :
-                            '<button onclick="addPoints(\'' + nom + '\', this)" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">VALIDER</button>'
-                        ) +
+                        '<span class="bg-blue-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">S' + week + '</span></div>' +
+                        '<p class="font-bold text-xs dark:text-white">' + mc + '</p>' +
+                        extraHtml + '</div>' +
+                        (okActuelle ? '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅</span>' :
+                            '<button onclick="addPoints(\'' + nom + '\', this)" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">VALIDER</button>') +
                         '</div>';
                 } else {
                     var ok = user.last_week_validated === week;
                     var rh = rattrapé ? '<p class="text-[8px] text-green-500 font-bold">Retard rattrape !</p>' : '';
-                    var extraM = taskOverridesCache[nom + '_extra'] || '';
-                    var extraHtml = extraM ? '<p class="text-[8px] text-purple-500 font-bold mt-1">➕ Bonus : ' + extraM + '</p>' : '';
-                    c.innerHTML += '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center"><div class="leading-tight"><p class="text-[8px] font-black text-blue-500 uppercase">' + nom + '</p><p class="font-bold text-xs lg:text-base dark:text-white">' + mc + '</p>' + extraHtml + rh + '</div><button onclick="addPoints(\'' + nom + '\', this)" class="' + (ok?'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold':'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg') + '" ' + (ok?'disabled':'') + '>' + (ok?'✅':'VALIDER') + '</button></div>';
+                    c.innerHTML +=
+                        '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">' +
+                        '<div class="leading-tight"><p class="text-[8px] font-black text-blue-500 uppercase">' + nom + '</p>' +
+                        '<p class="font-bold text-xs lg:text-base dark:text-white">' + mc + '</p>' +
+                        extraHtml + rh + '</div>' +
+                        '<button onclick="addPoints(\'' + nom + '\', this)" class="' +
+                        (ok?'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold':'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg') +
+                        '" ' + (ok?'disabled':'') + '>' + (ok?'✅':'VALIDER') + '</button></div>';
                 }
             });
         }
@@ -485,38 +416,34 @@
         /* ── FETCH DATA ── */
         function fetchAllData() {
             loadTaskOverrides().then(function() {
-            dbGet('scores','*',[],'points.desc').then(function(users) {
-                if (!users || !users.length) return;
-                dbGet('logs','*',[],'created_at.desc',10).then(function(logs) {
-                    /* Podium */
-                    document.getElementById('leaderboard').innerHTML = users.map(function(u,i){
-                        var r=(u.tache_en_retard&&!u.retard_valide)?'<span class="text-red-500 text-[8px] ml-1">retard</span>':'';
-                        return '<div class="flex justify-between items-center py-2 lg:py-3"><span class="text-xs lg:text-sm font-bold '+(i===0?'text-blue-500':'opacity-80')+'">'+(i===0?'🥇':i+1)+'. '+u.name+r+'</span><span class="font-black text-sm lg:text-xl">'+u.points+' <small class="text-[8px] opacity-40">PTS</small></span></div>';
-                    }).join('');
-                    /* Live Activity */
-                    var tl={validation:'✅ Validation',malus:'⚠️ Malus',malus_auto:'🤖 Malus auto',rattrapage:'🔄 Rattrapage',message:'💬 Message'};
-                    document.getElementById('history-logs').innerHTML = (logs||[]).map(function(l){
-                        var col=l.points_gagnes>0?'text-green-400':l.points_gagnes<0?'text-red-400':'text-slate-400';
-                        return '<div class="flex justify-between items-center border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white">'+l.name+'</span><span class="opacity-40 text-[8px] uppercase font-black">'+(tl[l.type]||l.type)+'</span></div><span class="'+col+' font-black">'+(l.points_gagnes>0?'+':'')+l.points_gagnes+' pts</span></div>';
-                    }).join('');
-                    /* Admin */
-                    document.getElementById('admin-malus-list').innerHTML = users.map(function(u){
-                        var r=(u.tache_en_retard&&!u.retard_valide)?'<p class="text-red-500 text-[9px]">Retard S'+u.tache_en_retard+'</p>':'';
-                        return '<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-3 rounded-2xl text-xs"><div class="text-left"><span class="font-bold">'+u.name+' ('+u.points+' pts)</span>'+r+'</div><button onclick="applyMalus(\''+u.id+'\',\''+u.name+'\','+u.points+')" class="bg-orange-600 text-white px-3 py-1 rounded-lg">-2 PTS</button></div>';
-                    }).join('');
-                    buildNotifTargets(users);
-                    buildTaskOverrideList();
-                    buildTaskHistory();
-                    buildMsgTargets();
-                    window._lastUsers = users;
-                    renderTasks(users);
-                    renderChart(users);
+                dbGet('scores','*',[],'points.desc').then(function(users) {
+                    if (!users || !users.length) return;
+                    dbGet('logs','*',[],'created_at.desc',10).then(function(logs) {
+                        document.getElementById('leaderboard').innerHTML = users.map(function(u,i){
+                            var r=(u.tache_en_retard&&!u.retard_valide)?'<span class="text-red-500 text-[8px] ml-1">retard</span>':'';
+                            return '<div class="flex justify-between items-center py-2 lg:py-3"><span class="text-xs lg:text-sm font-bold '+(i===0?'text-blue-500':'opacity-80')+'">'+(i===0?'🥇':i+1)+'. '+u.name+r+'</span><span class="font-black text-sm lg:text-xl">'+u.points+' <small class="text-[8px] opacity-40">PTS</small></span></div>';
+                        }).join('');
+                        var tl={validation:'✅ Validation',malus:'⚠️ Malus',malus_auto:'🤖 Malus auto',rattrapage:'🔄 Rattrapage'};
+                        document.getElementById('history-logs').innerHTML = (logs||[]).map(function(l){
+                            var col=l.points_gagnes>0?'text-green-400':l.points_gagnes<0?'text-red-400':'text-slate-400';
+                            return '<div class="flex justify-between items-center border-b border-white/5 pb-2"><div class="flex flex-col"><span class="font-bold text-white">'+l.name+'</span><span class="opacity-40 text-[8px] uppercase font-black">'+(tl[l.type]||l.type)+'</span></div><span class="'+col+' font-black">'+(l.points_gagnes>0?'+':'')+l.points_gagnes+' pts</span></div>';
+                        }).join('');
+                        document.getElementById('admin-malus-list').innerHTML = users.map(function(u){
+                            var r=(u.tache_en_retard&&!u.retard_valide)?'<p class="text-red-500 text-[9px]">Retard S'+u.tache_en_retard+'</p>':'';
+                            return '<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-3 rounded-2xl text-xs"><div class="text-left"><span class="font-bold">'+u.name+' ('+u.points+' pts)</span>'+r+'</div><button onclick="applyMalus(\''+u.id+'\',\''+u.name+'\','+u.points+')" class="bg-orange-600 text-white px-3 py-1 rounded-lg">-2 PTS</button></div>';
+                        }).join('');
+                        buildNotifTargets(users);
+                        buildTaskOverrideList();
+                        buildTaskHistory();
+                        buildMsgTargets();
+                        window._lastUsers = users;
+                        renderTasks(users);
+                        renderChart(users);
+                    });
                 });
-            }); /* end dbGet scores */
-            }); /* end loadTaskOverrides */
+            });
         }
 
-        /* ── GRAPHIQUE ── */
         function renderChart(users) {
             var ctx = document.getElementById('scoreChart').getContext('2d');
             var isDark = document.documentElement.classList.contains('dark');
@@ -536,13 +463,11 @@
             dbGet('scores','*').then(function(all) {
                 var user = all.find(function(u){return u.name===nom;});
                 if (!user) return;
-                /* Nettoie complètement le retard */
-                var url = SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id;
-                fetch(url, {
-                    method: 'PATCH',
-                    headers: Object.assign({}, HEADERS, {'Prefer':'return=representation'}),
-                    body: JSON.stringify({retard_valide: true, tache_en_retard: null})
-                }).then(function(r){ return r.json(); }).then(function(){
+                fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
+                    method:'PATCH',
+                    headers:Object.assign({},HEADERS,{'Prefer':'return=representation'}),
+                    body:JSON.stringify({retard_valide:true, tache_en_retard:null})
+                }).then(function(r){return r.json();}).then(function(){
                     dbInsert('logs',{name:nom,points_gagnes:0,type:'rattrapage'});
                     showToast(nom+' — Rattrapage valide !');
                     fetchAllData();
@@ -557,31 +482,19 @@
                 if (!user || user.last_week_validated===wn) return;
                 var deja = all.filter(function(u){return u.last_week_validated===wn;}).length;
                 var pts = Math.max(1, 5-deja);
-                var upd = {points:user.points+pts, last_week_validated:wn};
-                /* Update avec vérification */
-                var url = SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id;
-                fetch(url, {
-                    method: 'PATCH',
-                    headers: Object.assign({}, HEADERS, {'Prefer': 'return=representation'}),
-                    body: JSON.stringify(upd)
-                }).then(function(r) {
-                    return r.json();
-                }).then(function(data) {
-                    console.log('Update result:', JSON.stringify(data));
-                    if (!data || (Array.isArray(data) && data.length === 0)) {
-                        showToast('Erreur — reessaie !');
-                        return;
-                    }
+                fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
+                    method:'PATCH',
+                    headers:Object.assign({},HEADERS,{'Prefer':'return=representation'}),
+                    body:JSON.stringify({points:user.points+pts, last_week_validated:wn})
+                }).then(function(r){return r.json();}).then(function(data){
+                    if (!data || (Array.isArray(data) && data.length===0)) { showToast('Erreur — reessaie !'); return; }
                     dbInsert('logs',{name:nom,points_gagnes:pts,type:'validation'});
                     playValidationSound();
                     showToast(nom+' — +'+pts+' point'+(pts>1?'s':'')+' !');
                     var mi = getMission(colocs.indexOf(nom), wn);
-                    sendNtfyNotification('✅ '+nom+' a valide !', nom+' — '+mi+' est fait ! 💪', colocs.filter(function(c){return c!==nom;}), false);
+                    sendNtfyNotification(nom+' a valide !', nom+' — '+mi+' est fait !', colocs.filter(function(c){return c!==nom;}), false);
                     fetchAllData();
-                }).catch(function(e) {
-                    console.error('addPoints error:', e);
-                    showToast('Erreur reseau — reessaie !');
-                });
+                }).catch(function(e){ console.error('addPoints error:', e); showToast('Erreur reseau !'); });
             });
         }
 
@@ -602,40 +515,26 @@
             });
         }
 
-        /* ── GESTION MANUELLE DES TÂCHES ── */
-        /* ── HISTORIQUE DES TÂCHES (8 semaines) ── */
+        /* ── HISTORIQUE ── */
         function buildTaskHistory() {
             var c = document.getElementById('task-history');
             if (!c) return;
             var week = getWeekNumber();
-            var overrides = JSON.parse(localStorage.getItem('task-overrides') || '{}');
-
-            /* Génère tableau des 8 dernières semaines */
-            var html = '<table style="border-collapse:collapse;width:100%">';
-
-            /* En-tête */
-            html += '<tr><th style="padding:3px 4px;text-align:left;font-weight:900;color:#6366f1">Coloc</th>';
-            for (var w = week - 7; w <= week; w++) {
-                var label = w === week ? '<b>S' + w + '★</b>' : 'S' + w;
-                html += '<th style="padding:3px 4px;text-align:center;color:#94a3b8">' + label + '</th>';
+            var html = '<table style="border-collapse:collapse;width:100%"><tr><th style="padding:3px 4px;text-align:left;font-weight:900;color:#6366f1">Coloc</th>';
+            for (var w=week-7; w<=week; w++) {
+                html += '<th style="padding:3px 4px;text-align:center;color:#94a3b8">' + (w===week?'<b>S'+w+'★</b>':'S'+w) + '</th>';
             }
             html += '</tr>';
-
-            /* Lignes par coloc */
-            colocs.forEach(function(nom, i) {
-                html += '<tr style="border-top:1px solid #e2e8f0">';
-                html += '<td style="padding:3px 4px;font-weight:900;color:#1e293b">' + nom + '</td>';
-                for (var w = week - 7; w <= week; w++) {
-                    var m = w === week && overrides[nom] ? overrides[nom] : getMissionRaw(i, w);
-                    /* Couleur selon type */
+            colocs.forEach(function(nom,i){
+                html += '<tr style="border-top:1px solid #e2e8f0"><td style="padding:3px 4px;font-weight:900;color:#1e293b">'+nom+'</td>';
+                for (var w=week-7; w<=week; w++) {
+                    var m = getMissionRaw(i, w);
                     var color = '#64748b';
-                    if (m.indexOf('Douche') !== -1) color = '#3b82f6';
-                    else if (m.indexOf('WC') !== -1) color = '#8b5cf6';
-                    else if (m.indexOf('Cuisine') !== -1 || m.indexOf('Salon') !== -1 || m.indexOf('Couloir') !== -1) color = '#16a34a';
-                    else if (m.indexOf('age') !== -1) color = '#f59e0b';
-                    var short = m.replace('🚿','').replace('🚽','').replace('🧻','').replace('🧹','').replace('🪣','').replace('🏠','').trim().slice(0, 10);
-                    var bg = w === week ? '#eff6ff' : 'transparent';
-                    html += '<td style="padding:3px 4px;text-align:center;color:' + color + ';background:' + bg + ';font-weight:700">' + short + '</td>';
+                    if (m.indexOf('Douche')!==-1) color='#3b82f6';
+                    else if (m.indexOf('WC')!==-1) color='#8b5cf6';
+                    else if (m.indexOf('Cuisine')!==-1||m.indexOf('Salon')!==-1) color='#16a34a';
+                    var short = m.replace(/[🚿🚽🧻🧹🪣🏠📦🧽🧊🪟🗑️🧺]/g,'').trim().slice(0,10);
+                    html += '<td style="padding:3px 4px;text-align:center;color:'+color+';background:'+(w===week?'#eff6ff':'transparent')+';font-weight:700">'+short+'</td>';
                 }
                 html += '</tr>';
             });
@@ -643,23 +542,12 @@
             c.innerHTML = html;
         }
 
-        /* getMission sans override pour l'historique */
-        function getMissionRaw(colocIdx, weekNum) {
-            var seq = ROTATION[colocIdx];
-            var pos = (weekNum - 1) % 5;
-            return missions[seq[pos]];
-        }
-
-        /* Cache local des overrides pour eviter trop de requetes */
-        var taskOverridesCache = {};
-
+        /* ── OVERRIDES ── */
         function loadTaskOverrides() {
             var wn = getWeekNumber();
-            return dbGet('task_overrides', '*', ['semaine=eq.'+wn]).then(function(rows) {
+            return dbGet('task_overrides','*',['semaine=eq.'+wn]).then(function(rows){
                 taskOverridesCache = {};
-                (rows || []).forEach(function(r) {
-                    taskOverridesCache[r.nom] = r.mission;
-                });
+                (rows||[]).forEach(function(r){ taskOverridesCache[r.nom] = r.mission; });
                 return taskOverridesCache;
             });
         }
@@ -668,61 +556,89 @@
             var c = document.getElementById('task-override-list');
             if (!c) return;
             var week = getWeekNumber();
-            c.innerHTML = colocs.map(function(nom, i) {
+            c.innerHTML = colocs.map(function(nom,i){
                 var currentMission = taskOverridesCache[nom] || getMissionRaw(i, week);
-                var extraMission = taskOverridesCache[nom + '_extra'] || '';
+                var extraMission = taskOverridesCache[nom+'_extra'] || '';
                 var hasOverride = !!taskOverridesCache[nom];
                 var hasExtra = !!extraMission;
+
+                /* Options select tâche principale */
+                var mainOptions = allTasks.map(function(m){
+                    return '<option value="'+m+'"'+(m===currentMission?' selected':'')+'>'+m+'</option>';
+                }).join('');
+
+                /* Options select tâche bonus */
+                var extraOptions = '<option value="">— Aucune tache bonus —</option>' +
+                    allTasks.map(function(m){
+                        return '<option value="'+m+'"'+(m===extraMission?' selected':'')+'>'+m+'</option>';
+                    }).join('');
+
                 return '<div class="bg-white dark:bg-slate-900 rounded-xl p-2 flex flex-col gap-2 border border-slate-100 dark:border-slate-700">' +
 
                     /* En-tête */
                     '<div class="flex justify-between items-center">' +
-                    '<p class="text-[9px] font-black text-blue-500 uppercase">' + nom + '</p>' +
+                    '<p class="text-[9px] font-black text-blue-500 uppercase">'+nom+'</p>' +
                     '<div class="flex gap-1">' +
-                    (hasOverride ? '<span class="text-[8px] text-orange-500 font-bold">✏️ Modifie</span>' : '<span class="text-[8px] text-slate-400">Auto</span>') +
-                    (hasExtra ? '<span class="text-[8px] text-purple-500 font-bold ml-1">+Bonus</span>' : '') +
-                    '</div>' +
+                    (hasOverride?'<span class="text-[8px] text-orange-500 font-bold">Modifie</span>':'<span class="text-[8px] text-slate-400">Auto</span>') +
+                    (hasExtra?'<span class="text-[8px] text-purple-500 font-bold ml-1">+Bonus</span>':'') +
+                    '</div></div>' +
+
+                    /* Tâche principale — menu déroulant */
+                    '<div><p class="text-[8px] text-slate-400 font-bold mb-1">Tache principale :</p>' +
+                    '<select onchange="overrideTask(this.dataset.nom, this.value)" data-nom="'+nom+'" class="w-full text-[10px] p-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-bold">'+mainOptions+'</select></div>' +
+
+                    /* Tâche bonus — menu + saisie libre */
+                    '<div><p class="text-[8px] text-purple-500 font-bold mb-1">+ Tache bonus :</p>' +
+                    '<div class="flex gap-1 mb-1">' +
+                    '<select onchange="overrideExtraTask(this.dataset.nom, this.value)" data-nom="'+nom+'" class="flex-1 text-[10px] p-1 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-slate-800 font-bold">'+extraOptions+'</select>' +
+                    (hasExtra?'<button onclick="removeExtraTask(this.dataset.nom)" data-nom="'+nom+'" class="bg-red-500 text-white px-2 rounded-lg text-[9px] font-black">✕</button>':'') +
                     '</div>' +
 
-                    /* Tâche principale */
-                    '<div>' +
-                    '<p class="text-[8px] text-slate-400 font-bold mb-1">Tache principale :</p>' +
-                    '<select onchange="overrideTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="w-full text-[10px] p-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 font-bold">' +
-                    allTasks.map(function(m) {
-                        return '<option value="' + m + '"' + (m === currentMission ? ' selected' : '') + '>' + m + '</option>';
-                    }).join('') +
-                    '</select>' +
-                    '</div>' +
-
-                    /* Tâche bonus */
-                    '<div>' +
-                    '<p class="text-[8px] text-purple-500 font-bold mb-1">+ Tache bonus (optionnel) :</p>' +
+                    /* Saisie libre pour tâche bonus personnalisée */
                     '<div class="flex gap-1">' +
-                    '<select onchange="overrideExtraTask(this.dataset.nom, this.value)" data-nom="' + nom + '" class="flex-1 text-[10px] p-1 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-slate-800 font-bold">' +
-                    '<option value="">— Aucune tache bonus —</option>' +
-                    allTasks.map(function(m) {
-                        return '<option value="' + m + '"' + (m === extraMission ? ' selected' : '') + '>' + m + '</option>';
-                    }).join('') +
-                    '</select>' +
-                    (hasExtra ? '<button onclick="removeExtraTask(this.dataset.nom)" data-nom="' + nom + '" class="bg-red-500 text-white px-2 rounded-lg text-[9px] font-black">✕</button>' : '') +
-                    '</div>' +
+                    '<input type="text" placeholder="Ou saisir une tache libre..." data-nom="'+nom+'" id="custom-extra-'+nom+'" ' +
+                    'class="flex-1 text-[10px] p-1 rounded-lg border border-purple-100 dark:border-purple-800 bg-white dark:bg-slate-800 font-medium" />' +
+                    '<button onclick="applyCustomExtra(\''+nom+'\')" class="bg-purple-600 text-white px-2 rounded-lg text-[9px] font-black">+</button>' +
+                    '</div></div>' +
+
                     /* Bouton sauvegarder */
-                    '<button onclick="saveAllForColoc(this.dataset.nom)" data-nom="' + nom + '" class="w-full bg-green-600 text-white py-1.5 rounded-xl text-[9px] font-black active:scale-95 transition-all mt-1">💾 Sauvegarder</button>' +
-
+                    '<button onclick="saveAllForColoc(this.dataset.nom)" data-nom="'+nom+'" class="w-full bg-green-600 text-white py-1.5 rounded-xl text-[9px] font-black active:scale-95 transition-all">💾 Sauvegarder</button>' +
                     '</div>';
             }).join('');
         }
 
-        /* Cache temporaire avant sauvegarde */
-        var taskPendingChanges = {};
+        /* Applique une tâche bonus saisie librement */
+        function applyCustomExtra(nom) {
+            var input = document.getElementById('custom-extra-'+nom);
+            if (!input || !input.value.trim()) { showToast('Ecris une tache !'); return; }
+            var mission = '✏️ ' + input.value.trim();
+            taskPendingChanges[nom+'_extra'] = mission;
+            /* Met à jour visuellement le select et marque sauvegarder */
+            var selects = document.querySelectorAll('select[data-nom="'+nom+'"]');
+            selects.forEach(function(sel){
+                if (sel.options[0] && sel.options[0].value === '') {
+                    /* C'est le select bonus — ajoute l'option si elle n'existe pas */
+                    var exists = false;
+                    for (var i=0; i<sel.options.length; i++) {
+                        if (sel.options[i].value === mission) { sel.selectedIndex = i; exists = true; break; }
+                    }
+                    if (!exists) {
+                        var opt = document.createElement('option');
+                        opt.value = mission; opt.text = mission; opt.selected = true;
+                        sel.appendChild(opt);
+                    }
+                }
+            });
+            input.value = '';
+            /* Marque le bouton sauvegarder */
+            markSaveButton(nom);
+            showToast('Tache "'+mission+'" prete — clique Sauvegarder !');
+        }
 
-        function overrideTask(nom, mission) {
-            /* Stocke en attente — pas encore sauvegarde */
-            taskPendingChanges[nom] = mission;
-            /* Marque visuellement le bouton sauvegarder */
-            var btns = document.querySelectorAll('[data-nom="' + nom + '"]');
-            btns.forEach(function(btn) {
-                if (btn.tagName === 'BUTTON' && btn.textContent.indexOf('Sauvegarder') !== -1) {
+        function markSaveButton(nom) {
+            var btns = document.querySelectorAll('button[data-nom="'+nom+'"]');
+            btns.forEach(function(btn){
+                if (btn.textContent.indexOf('Sauvegarder') !== -1) {
                     btn.classList.remove('bg-green-600');
                     btn.classList.add('bg-orange-500');
                     btn.textContent = '💾 Sauvegarder *';
@@ -730,66 +646,23 @@
             });
         }
 
-        function saveTaskOverride(nom) {
-            var wn = getWeekNumber();
-            var mission = taskPendingChanges[nom];
-            if (!mission) {
-                showToast('Aucun changement a sauvegarder pour ' + nom);
-                return;
-            }
-            /* Upsert dans Supabase */
-            fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
-                method: 'POST',
-                headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
-                body: JSON.stringify({ nom: nom, mission: mission, semaine: wn })
-            }).then(function() {
-                taskOverridesCache[nom] = mission;
-                delete taskPendingChanges[nom];
-                showToast('Tache de ' + nom + ' sauvegardee ! ✅');
-                buildTaskOverrideList();
-                buildTaskHistory();
-                window._lastUsers && renderTasks(window._lastUsers);
-            });
+        function overrideTask(nom, mission) {
+            taskPendingChanges[nom] = mission;
+            markSaveButton(nom);
         }
 
         function overrideExtraTask(nom, mission) {
             if (!mission) { removeExtraTask(nom); return; }
-            /* Stocke en attente */
-            taskPendingChanges[nom + '_extra'] = mission;
-            /* Marque le bouton sauvegarder */
-            var btns = document.querySelectorAll('[data-nom="' + nom + '"]');
-            btns.forEach(function(btn) {
-                if (btn.tagName === 'BUTTON' && btn.textContent.indexOf('Sauvegarder') !== -1) {
-                    btn.classList.remove('bg-green-600');
-                    btn.classList.add('bg-orange-500');
-                    btn.textContent = '💾 Sauvegarder *';
-                }
-            });
-        }
-
-        function saveExtraTask(nom) {
-            var wn = getWeekNumber();
-            var mission = taskPendingChanges[nom + '_extra'];
-            if (!mission) return;
-            fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
-                method: 'POST',
-                headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
-                body: JSON.stringify({ nom: nom + '_extra', mission: mission, semaine: wn })
-            }).then(function() {
-                taskOverridesCache[nom + '_extra'] = mission;
-                delete taskPendingChanges[nom + '_extra'];
-                showToast('Bonus de ' + nom + ' sauvegarde ! ✅');
-                buildTaskOverrideList();
-                window._lastUsers && renderTasks(window._lastUsers);
-            });
+            taskPendingChanges[nom+'_extra'] = mission;
+            markSaveButton(nom);
         }
 
         function removeExtraTask(nom) {
             var wn = getWeekNumber();
-            dbDelete('task_overrides', ['nom=eq.'+nom+'_extra', 'semaine=eq.'+wn]).then(function() {
-                delete taskOverridesCache[nom + '_extra'];
-                showToast('Tache bonus de ' + nom + ' supprimee');
-                loadTaskOverrides().then(function() {
+            dbDelete('task_overrides',['nom=eq.'+nom+'_extra','semaine=eq.'+wn]).then(function(){
+                delete taskOverridesCache[nom+'_extra'];
+                showToast('Tache bonus supprimee');
+                loadTaskOverrides().then(function(){
                     buildTaskOverrideList();
                     window._lastUsers && renderTasks(window._lastUsers);
                 });
@@ -798,40 +671,23 @@
 
         function saveAllForColoc(nom) {
             var hasMain = !!taskPendingChanges[nom];
-            var hasExtra = !!taskPendingChanges[nom + '_extra'];
-            if (!hasMain && !hasExtra) {
-                showToast('Aucun changement pour ' + nom);
-                return;
-            }
+            var hasExtra = !!taskPendingChanges[nom+'_extra'];
+            if (!hasMain && !hasExtra) { showToast('Aucun changement pour '+nom); return; }
+            var wn = getWeekNumber();
             var promises = [];
-            if (hasMain) promises.push(new Promise(function(resolve) {
-                var wn = getWeekNumber();
-                fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
-                    method: 'POST',
-                    headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
-                    body: JSON.stringify({ nom: nom, mission: taskPendingChanges[nom], semaine: wn })
-                }).then(function() {
-                    taskOverridesCache[nom] = taskPendingChanges[nom];
-                    delete taskPendingChanges[nom];
-                    resolve();
-                });
-            }));
-            if (hasExtra) promises.push(new Promise(function(resolve) {
-                var wn = getWeekNumber();
-                fetch(SUPABASE_URL + '/rest/v1/task_overrides', {
-                    method: 'POST',
-                    headers: Object.assign({}, HEADERS, {'Prefer': 'resolution=merge-duplicates'}),
-                    body: JSON.stringify({ nom: nom + '_extra', mission: taskPendingChanges[nom + '_extra'], semaine: wn })
-                }).then(function() {
-                    taskOverridesCache[nom + '_extra'] = taskPendingChanges[nom + '_extra'];
-                    delete taskPendingChanges[nom + '_extra'];
-                    resolve();
-                });
-            }));
-            Promise.all(promises).then(function() {
-                showToast('Taches de ' + nom + ' sauvegardees ! ✅');
-                /* Recharge le cache depuis Supabase avant de re-rendre */
-                loadTaskOverrides().then(function() {
+            if (hasMain) promises.push(fetch(SUPABASE_URL+'/rest/v1/task_overrides',{
+                method:'POST',
+                headers:Object.assign({},HEADERS,{'Prefer':'resolution=merge-duplicates'}),
+                body:JSON.stringify({nom:nom, mission:taskPendingChanges[nom], semaine:wn})
+            }).then(function(){ taskOverridesCache[nom]=taskPendingChanges[nom]; delete taskPendingChanges[nom]; }));
+            if (hasExtra) promises.push(fetch(SUPABASE_URL+'/rest/v1/task_overrides',{
+                method:'POST',
+                headers:Object.assign({},HEADERS,{'Prefer':'resolution=merge-duplicates'}),
+                body:JSON.stringify({nom:nom+'_extra', mission:taskPendingChanges[nom+'_extra'], semaine:wn})
+            }).then(function(){ taskOverridesCache[nom+'_extra']=taskPendingChanges[nom+'_extra']; delete taskPendingChanges[nom+'_extra']; }));
+            Promise.all(promises).then(function(){
+                showToast('Taches de '+nom+' sauvegardees ! ✅');
+                loadTaskOverrides().then(function(){
                     buildTaskOverrideList();
                     buildTaskHistory();
                     window._lastUsers && renderTasks(window._lastUsers);
@@ -841,20 +697,20 @@
 
         function resetTaskOverrides() {
             var wn = getWeekNumber();
-            dbDelete('task_overrides', ['semaine=eq.'+wn]).then(function() {
+            dbDelete('task_overrides',['semaine=eq.'+wn]).then(function(){
                 taskOverridesCache = {};
-                showToast('Taches remises en rotation automatique !');
+                showToast('Rotation automatique retablie !');
                 buildTaskOverrideList();
                 buildTaskHistory();
                 fetchAllData();
             });
         }
 
-        /* ── NOTIF CIBLÉE ADMIN ── */
+        /* ── NOTIF CIBLÉE ── */
         function buildNotifTargets(users) {
             var c = document.getElementById('notif-targets');
             if (!c) return;
-            c.innerHTML = colocs.map(function(nom) {
+            c.innerHTML = colocs.map(function(nom){
                 var user = users ? users.find(function(u){return u.name===nom;}) : null;
                 var pts = user ? user.points : 0;
                 var ok = user ? user.last_week_validated===getWeekNumber() : false;
@@ -862,20 +718,16 @@
                 return '<button onclick="toggleNotifTarget(\''+nom+'\')" class="'+(sel?'bg-blue-600 text-white':'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200')+' py-2 px-1 rounded-xl text-[9px] font-black text-center">'+(ok?'✅':'⏳')+'<br>'+nom+'<br><span class="text-[8px] opacity-70">'+pts+'pts</span></button>';
             }).join('');
         }
-
         function toggleNotifTarget(nom) {
-            var idx = selectedNotifTargets.indexOf(nom);
-            if (idx===-1) selectedNotifTargets.push(nom);
-            else selectedNotifTargets.splice(idx,1);
+            var idx=selectedNotifTargets.indexOf(nom);
+            if(idx===-1) selectedNotifTargets.push(nom); else selectedNotifTargets.splice(idx,1);
             dbGet('scores','*',[],'points.desc').then(function(u){buildNotifTargets(u);});
             updateNotifPreview();
         }
-
         function updateNotifPreview() {
-            var type = document.getElementById('notif-type').value;
-            var preview = document.getElementById('notif-preview');
-            var cb = document.getElementById('custom-msg-box');
-            cb.classList.toggle('hidden', type!=='custom');
+            var type=document.getElementById('notif-type').value;
+            var preview=document.getElementById('notif-preview');
+            document.getElementById('custom-msg-box').classList.toggle('hidden',type!=='custom');
             if (!selectedNotifTargets.length) { preview.textContent='Selectionne des destinataires...'; return; }
             var now=new Date(), day=now.getDay(), hour=now.getHours();
             var jr=day===0?0:7-day, hr=23-hour;
@@ -884,15 +736,14 @@
                 if (day===0&&hour>=22) msg=names+' — URGENCE ! Moins d\'1h avant le malus !';
                 else if (day===0) msg=names+' — Il reste '+hr+'h ce dimanche.';
                 else msg=names+' — Il reste '+jr+' jour'+(jr>1?'s':'')+' pour valider.';
-            } else if (type==='jours') msg=names+' — Il reste '+jr+' jour'+(jr>1?'s':'')+' !';
-            else if (type==='heures') msg=day===0?(names+' — Il reste '+hr+'h !'):'Disponible le dimanche.';
-            else if (type==='urgent') msg=names+' — URGENCE ! Valide ta tache MAINTENANT !';
+            } else if (type==='jours') msg=names+' — '+jr+' jour'+(jr>1?'s':'')+' restant'+(jr>1?'s':'')+'!';
+            else if (type==='heures') msg=day===0?(names+' — '+hr+'h restantes !'):'Disponible le dimanche uniquement.';
+            else if (type==='urgent') msg=names+' — URGENCE ! Valide MAINTENANT !';
             else { var cm=document.getElementById('custom-msg').value; msg=cm?(names+' — '+cm):'Ecris ton message...'; }
             preview.textContent = msg;
         }
-
         function sendTargetedNotif() {
-            if (!selectedNotifTargets.length) { showToast('Selectionne au moins un destinataire !'); return; }
+            if (!selectedNotifTargets.length) { showToast('Selectionne un destinataire !'); return; }
             var type=document.getElementById('notif-type').value;
             var now=new Date(), day=now.getDay(), hour=now.getHours();
             var jr=day===0?0:7-day, hr=23-hour;
@@ -902,191 +753,126 @@
                 if (day===0&&hour>=22){title='URGENCE !';body=selectedNotifTargets.join(', ')+' — Moins d\'1h avant le malus !';}
                 else if (day===0){title='Rappel dimanche';body=selectedNotifTargets.join(', ')+' — Il reste '+hr+'h.';}
                 else{title='Rappel tache';body=selectedNotifTargets.join(', ')+' — Il reste '+jr+' jour'+(jr>1?'s':'')+' pour valider.';}
-            } else if (type==='jours'){title=jr+' jour'+(jr>1?'s':'')+' restant'+(jr>1?'s':'');body=selectedNotifTargets.join(', ')+' — Valide ta tache !';}
+            } else if (type==='jours'){title='Rappel';body=selectedNotifTargets.join(', ')+' — '+jr+' jour'+(jr>1?'s':'')+' restant'+(jr>1?'s':'')+'!';}
             else if (type==='heures'){if(day!==0){showToast('Disponible le dimanche !');return;}title=hr+'h restantes';body=selectedNotifTargets.join(', ')+' — Valide avant minuit !';}
             else if (type==='urgent'){title='URGENT !';body=selectedNotifTargets.join(', ')+' — Valide MAINTENANT !';}
             else{var cm=document.getElementById('custom-msg').value;if(!cm){showToast('Ecris un message !');return;}title='Message de Pakito';body=selectedNotifTargets.join(', ')+' — '+cm;}
-
             if (urgent) playAlarmSound(); else playRappelSound();
             sendNtfyNotification(title, body, selectedNotifTargets, urgent);
-            showToast('Notification envoyee a '+selectedNotifTargets.join(', ')+' !');
+            showToast('Notification envoyee !');
             selectedNotifTargets=[];
             dbGet('scores','*',[],'points.desc').then(function(u){buildNotifTargets(u);});
             document.getElementById('notif-preview').textContent='Selectionne des destinataires...';
         }
 
         /* ── TESTS ── */
-        function testAlarme() {
-            playAlarmSound();
-            sendNtfyNotification('🚨 TEST ALARME', 'Test de l alarme du dimanche — GTM Coloc', [], true);
-            showToast('Alarme envoyee a tous !');
-        }
-        function testValidation() {
-            playValidationSound();
-            var mi = getMission(colocs.indexOf('PAKITO'), getWeekNumber());
-            sendNtfyNotification('✅ PAKITO a valide !', mi+' — C est fait !', [], false);
-            showToast('Notif validation envoyee !');
-        }
+        function testAlarme() { playAlarmSound(); sendNtfyNotification('TEST ALARME', 'Test alarme GTM Coloc', [], true); showToast('Alarme test envoyee !'); }
+        function testValidation() { playValidationSound(); sendNtfyNotification('Test Validation', 'PAKITO a valide sa tache !', [], false); showToast('Notif test envoyee !'); }
         function testRappel() {
-            var wn=getWeekNumber();
             dbGet('scores','name,last_week_validated').then(function(u){
-                var nv=(u||[]).filter(function(x){return x.last_week_validated!==wn;}).map(function(x){return x.name;});
+                var nv=(u||[]).filter(function(x){return x.last_week_validated!==getWeekNumber();}).map(function(x){return x.name;});
                 playRappelSound();
-                if (nv.length) sendNtfyNotification('🔔 Rappel missions', nv.join(', ')+' n ont pas encore valide !', nv, false);
-                showToast(nv.length?'Rappel envoye a '+nv.join(', '):'Tout le monde a valide !');
+                if (nv.length) sendNtfyNotification('Rappel missions', nv.join(', ')+' n ont pas valide !', nv, false);
+                showToast(nv.length?'Rappel envoye !':'Tout le monde a valide !');
             });
         }
 
-        /* ── STATUT NOTIFICATIONS ── */
+        /* ── NOTIF STATUS ── */
         function updateNotifStatusUI() {
-            var icon = document.getElementById('notif-status');
+            var icon=document.getElementById('notif-status');
             if (!icon) return;
             icon.classList.remove('hidden');
-            icon.textContent = '🔔';
-            var nom = localStorage.getItem('gtm-coloc-identity');
-            var channel = nom ? (NTFY_CHANNELS[nom] || 'gtm-coloc-appart48') : 'gtm-coloc-appart48';
-            icon.title = 'Canal Ntfy : ' + channel;
+            icon.textContent='🔔';
+            var nom=localStorage.getItem('gtm-coloc-identity');
+            icon.title='Canal Ntfy : '+(nom?(NTFY_CHANNELS[nom]||'gtm-coloc-appart48'):'gtm-coloc-appart48');
         }
-
         function showNotifInfo() {
-            var nom = localStorage.getItem('gtm-coloc-identity');
-            var channel = nom ? (NTFY_CHANNELS[nom] || 'gtm-coloc-appart48') : 'gtm-coloc-appart48';
-            showToast('Abonne-toi au canal Ntfy : ' + channel);
+            var nom=localStorage.getItem('gtm-coloc-identity');
+            showToast('Canal Ntfy : '+(nom?(NTFY_CHANNELS[nom]||'gtm-coloc-appart48'):'gtm-coloc-appart48'));
         }
 
         /* ── SONS ── */
         function playAlarmSound() {
-            try {
-                var ctx=new(window.AudioContext||window.webkitAudioContext)();
-                [0,.3,.6,.9,1.2,1.5,1.8].forEach(function(t){
-                    var o=ctx.createOscillator(),g=ctx.createGain();
-                    o.connect(g);g.connect(ctx.destination);
-                    o.frequency.value=880;o.type='square';
-                    g.gain.setValueAtTime(.4,ctx.currentTime+t);
-                    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.25);
-                    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.25);
-                });
-            } catch(e){}
+            try { var ctx=new(window.AudioContext||window.webkitAudioContext)();
+                [0,.3,.6,.9,1.2,1.5,1.8].forEach(function(t){ var o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.frequency.value=880;o.type='square'; g.gain.setValueAtTime(.4,ctx.currentTime+t); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.25); o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.25); }); } catch(e){}
         }
         function playValidationSound() {
-            try {
-                var ctx=new(window.AudioContext||window.webkitAudioContext)();
-                [523,659,784].forEach(function(freq,i){
-                    var o=ctx.createOscillator(),g=ctx.createGain();
-                    o.connect(g);g.connect(ctx.destination);
-                    o.frequency.value=freq;o.type='sine';
-                    g.gain.setValueAtTime(.25,ctx.currentTime+i*.15);
-                    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.15+.3);
-                    o.start(ctx.currentTime+i*.15);o.stop(ctx.currentTime+i*.15+.3);
-                });
-            } catch(e){}
+            try { var ctx=new(window.AudioContext||window.webkitAudioContext)();
+                [523,659,784].forEach(function(freq,i){ var o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.frequency.value=freq;o.type='sine'; g.gain.setValueAtTime(.25,ctx.currentTime+i*.15); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.15+.3); o.start(ctx.currentTime+i*.15);o.stop(ctx.currentTime+i*.15+.3); }); } catch(e){}
         }
         function playRappelSound() {
-            try {
-                var ctx=new(window.AudioContext||window.webkitAudioContext)();
-                [0,.4].forEach(function(t){
-                    var o=ctx.createOscillator(),g=ctx.createGain();
-                    o.connect(g);g.connect(ctx.destination);
-                    o.frequency.value=660;o.type='sine';
-                    g.gain.setValueAtTime(.3,ctx.currentTime+t);
-                    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.3);
-                    o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.3);
-                });
-            } catch(e){}
+            try { var ctx=new(window.AudioContext||window.webkitAudioContext)();
+                [0,.4].forEach(function(t){ var o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.frequency.value=660;o.type='sine'; g.gain.setValueAtTime(.3,ctx.currentTime+t); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.3); o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.3); }); } catch(e){}
         }
 
         /* ── MODE SOMBRE ── */
         function toggleDarkMode() {
-            var html=document.documentElement, icon=document.getElementById('theme-icon');
-            if (html.classList.contains('dark')){html.classList.remove('dark');localStorage.setItem('theme','light');icon.innerText='🌞';}
+            var html=document.documentElement,icon=document.getElementById('theme-icon');
+            if(html.classList.contains('dark')){html.classList.remove('dark');localStorage.setItem('theme','light');icon.innerText='🌞';}
             else{html.classList.add('dark');localStorage.setItem('theme','dark');icon.innerText='🌙';}
-            if (myChart) renderChart([]);
+            if(myChart) renderChart([]);
         }
 
-        /* ── ADMIN 5 CLICS ── */
+        /* ── ADMIN ── */
         var adminClicks=0, adminTimer=null;
-        document.getElementById('admin-trigger').addEventListener('click', function(e) {
+        document.getElementById('admin-trigger').addEventListener('click', function(e){
             e.preventDefault();
             adminClicks++;
             clearTimeout(adminTimer);
             adminTimer=setTimeout(function(){adminClicks=0;},2000);
-            if (adminClicks>=5){adminClicks=0;clearTimeout(adminTimer);document.getElementById('admin-panel').classList.remove('hidden');}
+            if(adminClicks>=5){adminClicks=0;clearTimeout(adminTimer);document.getElementById('admin-panel').classList.remove('hidden');}
         });
         function closeAdmin(){document.getElementById('admin-panel').classList.add('hidden');selectedNotifTargets=[];}
 
-        /* ── IDENTITE COLOC ─────────────────────────────────────────
-           Chaque appareil memorise le nom du colocataire.
-           OneSignal utilise ce tag pour le ciblage individuel.
-        ──────────────────────────────────────────────────────── */
+        /* ── IDENTITE ── */
         function checkIdentity() {
-            var nom = localStorage.getItem('gtm-coloc-identity');
-            if (!nom) {
-                document.getElementById('identity-modal').classList.remove('hidden');
-            } else {
-                updateHeaderIdentity(nom);
-                updateNotifStatusUI();
-            }
+            var nom=localStorage.getItem('gtm-coloc-identity');
+            if (!nom) document.getElementById('identity-modal').classList.remove('hidden');
+            else { updateHeaderIdentity(nom); updateNotifStatusUI(); }
         }
-
         function setIdentity(nom) {
             localStorage.setItem('gtm-coloc-identity', nom);
-            var channel = NTFY_CHANNELS[nom] || 'gtm-coloc-appart48';
-            /* Affiche le canal Ntfy dans le modal */
-            document.getElementById('ntfy-channel-display').textContent = channel;
+            var channel=NTFY_CHANNELS[nom]||'gtm-coloc-appart48';
+            document.getElementById('ntfy-channel-display').textContent=channel;
             document.getElementById('ntfy-instruction').classList.remove('hidden');
             document.getElementById('ntfy-confirm-btn').classList.remove('hidden');
-            /* Change la couleur du bouton sélectionné */
-            document.querySelectorAll('.identity-btn').forEach(function(b){ b.classList.replace('bg-blue-600','bg-slate-300'); });
-            event.target.classList.replace('bg-slate-300','bg-green-600');
+            document.querySelectorAll('.identity-btn').forEach(function(b){b.style.background='#94a3b8';});
+            event.target.style.background='#16a34a';
         }
-
         function confirmIdentity() {
-            var nom = localStorage.getItem('gtm-coloc-identity');
+            var nom=localStorage.getItem('gtm-coloc-identity');
             document.getElementById('identity-modal').classList.add('hidden');
             updateHeaderIdentity(nom);
             updateNotifStatusUI();
-            showToast('Bienvenue ' + nom + ' !');
+            showToast('Bienvenue '+nom+' !');
         }
-
         function updateHeaderIdentity(nom) {
-            var wi = document.getElementById('week-info');
-            if (wi) wi.innerText = 'Semaine n' + getWeekNumber() + ' — ' + nom;
+            var wi=document.getElementById('week-info');
+            if(wi) wi.innerText='Semaine n°'+getWeekNumber()+' — '+nom;
         }
-
         function changeIdentity() {
-            /* Permet de changer d'identite depuis le panel admin */
             localStorage.removeItem('gtm-coloc-identity');
             document.getElementById('identity-modal').classList.remove('hidden');
         }
 
-        /* ── MÉNAGE GÉNÉRAL DÉBUT DE MOIS ────────────────────────── */
+        /* ── MÉNAGE GÉNÉRAL ── */
         function checkMenageGeneral() {
-            var now = new Date();
-            var day = now.getDate();
-            var month = now.getMonth();
-            var year = now.getFullYear();
-            var storageKey = 'menage-general-' + year + '-' + month;
-
-            /* Affiche la bannière les 3 premiers jours du mois */
-            if (day <= 3 && !localStorage.getItem(storageKey)) {
-                document.getElementById('menage-general-banner').classList.remove('hidden');
-            }
+            var now=new Date(), day=now.getDate(), month=now.getMonth(), year=now.getFullYear();
+            var key='menage-general-'+year+'-'+month;
+            if (day<=3 && !localStorage.getItem(key)) document.getElementById('menage-general-banner').classList.remove('hidden');
         }
-
         function validerMenageGeneral() {
-            var now = new Date();
-            var storageKey = 'menage-general-' + now.getFullYear() + '-' + now.getMonth();
-            localStorage.setItem(storageKey, 'done');
+            var now=new Date();
+            localStorage.setItem('menage-general-'+now.getFullYear()+'-'+now.getMonth(), 'done');
             document.getElementById('menage-general-banner').classList.add('hidden');
-            showToast('Ménage général validé ! Bravo a tous 🎉');
+            showToast('Menage general valide ! Bravo a tous !');
         }
 
         /* ── INIT ── */
         function init() {
-            if (localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.getElementById('theme-icon').innerText='🌙';}
+            if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.getElementById('theme-icon').innerText='🌙';}
             document.getElementById('week-info').innerText='Semaine n°'+getWeekNumber();
-            /* Service Worker pour alertes locales dimanche */
-            if ('serviceWorker' in navigator) {
+            if('serviceWorker' in navigator){
                 navigator.serviceWorker.register('/sw.js').then(function(reg){
                     var sw=reg.active||reg.installing||reg.waiting;
                     if(sw) sw.postMessage({type:'SCHEDULE_CHECKS'});
@@ -1096,19 +882,13 @@
             checkIdentity();
             checkMenageGeneral();
             fetchAllData();
-            /* Recharge les taches toutes les 15 secondes — sauf si panel admin ouvert */
-            setInterval(function() {
-                if (document.getElementById('admin-panel').classList.contains('hidden')) {
-                    loadTaskOverrides().then(function() {
-                        if (window._lastUsers) renderTasks(window._lastUsers);
-                    });
+            setInterval(function(){
+                if(document.getElementById('admin-panel').classList.contains('hidden')){
+                    loadTaskOverrides().then(function(){ if(window._lastUsers) renderTasks(window._lastUsers); });
                 }
             }, 15000);
-            /* Recharge toutes les données toutes les 30 secondes — sauf si panel admin ouvert */
-            setInterval(function() {
-                if (document.getElementById('admin-panel').classList.contains('hidden')) {
-                    fetchAllData();
-                }
+            setInterval(function(){
+                if(document.getElementById('admin-panel').classList.contains('hidden')) fetchAllData();
             }, 30000);
         }
         init();

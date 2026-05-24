@@ -97,7 +97,27 @@
                 <div id="msg-targets" class="grid grid-cols-3 gap-2 mb-3"></div>
                 <textarea id="msg-text" rows="2" placeholder="Ecris ton message ici..."
                     class="w-full text-xs p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 resize-none mb-3 font-medium focus:outline-none focus:border-blue-400"></textarea>
-                <button onclick="sendColocMessage()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">📨 Envoyer le message</button>
+
+                <!-- Messages rapides WhatsApp -->
+                <div class="mb-3">
+                    <p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-2">📱 Messages rapides WhatsApp</p>
+                    <div class="flex flex-col gap-1">
+                        <button onclick="sendWhatsApp('rappel_dimanche')" class="w-full bg-green-500 text-white py-2 rounded-xl font-bold text-[10px] active:scale-95 text-left px-3">
+                            🟢 Rappel ménage dimanche
+                        </button>
+                        <button onclick="sendWhatsApp('rappel_urgent')" class="w-full bg-orange-500 text-white py-2 rounded-xl font-bold text-[10px] active:scale-95 text-left px-3">
+                            🟠 Rappel urgent — moins de 2h !
+                        </button>
+                        <button onclick="sendWhatsApp('felicitations')" class="w-full bg-blue-500 text-white py-2 rounded-xl font-bold text-[10px] active:scale-95 text-left px-3">
+                            🔵 Félicitations tout le monde a validé !
+                        </button>
+                        <button onclick="sendWhatsApp('custom')" class="w-full bg-slate-600 text-white py-2 rounded-xl font-bold text-[10px] active:scale-95 text-left px-3">
+                            ✏️ Envoyer mon message personnalisé via WhatsApp
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="sendColocMessage()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-lg">📨 Envoyer via Ntfy</button>
             </div>
 
             <!-- PODIUM -->
@@ -348,6 +368,27 @@
             else { var idx = selectedMsgTargets.indexOf(nom); if (idx===-1) selectedMsgTargets.push(nom); else selectedMsgTargets.splice(idx,1); }
             buildMsgTargets();
         }
+        /* ── WHATSAPP MESSAGES RAPIDES ── */
+        var WA_MESSAGES = {
+            rappel_dimanche: "Bonjour les gars 🏠✨\n\nN'oublions pas de faire le ménage avant 23h59 ce soir !\nChacun doit valider sa tâche sur l'app GTM Coloc.\n\nMerci d'avance à tous 🙏\n@tous",
+            rappel_urgent: "⚠️ URGENT — Il reste moins de 2 heures !\n\nCeux qui n'ont pas encore validé leur tâche sur GTM Coloc, faites-le maintenant avant le malus automatique à 23h59 !\n\n@tous",
+            felicitations: "🎉 Bravo à toute la coloc !\n\nTout le monde a validé sa tâche cette semaine 👏\nC'est ça l'esprit coloc !\n\nMerci à tous 🏆"
+        };
+
+        function sendWhatsApp(type) {
+            var msg = '';
+            if (type === 'custom') {
+                msg = document.getElementById('msg-text').value.trim();
+                if (!msg) { showToast('Ecris un message dans la zone de texte !'); return; }
+            } else {
+                msg = WA_MESSAGES[type] || '';
+            }
+            /* Ouvre WhatsApp avec le message pré-rempli */
+            /* wa.me sans numéro = ouvre WhatsApp pour choisir le contact */
+            var url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+            window.open(url, '_blank');
+        }
+
         function sendColocMessage() {
             var msg = document.getElementById('msg-text').value.trim();
             if (!msg) { showToast('Ecris un message !'); return; }

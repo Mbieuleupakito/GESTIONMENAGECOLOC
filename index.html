@@ -148,6 +148,18 @@
     <div id="admin-panel" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
         <div class="bg-white dark:bg-slate-900 w-full max-w-md p-6 rounded-[3rem] shadow-2xl text-center border-2 border-red-500 max-h-[90vh] overflow-y-auto">
             <h3 class="text-red-600 font-black mb-4 uppercase italic">👑 Pakito Admin Mode</h3>
+
+            <!-- GESTION COLOCATAIRES -->
+            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4 mb-4 text-left border-2 border-indigo-300 dark:border-indigo-700">
+                <p class="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-3">👥 Gérer les Colocataires</p>
+                <div id="coloc-manage-list" class="space-y-2 mb-3"></div>
+                <div class="flex gap-2">
+                    <input id="new-coloc-name" type="text" placeholder="Nom du nouveau coloc..."
+                        class="flex-1 text-xs p-2 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 font-bold uppercase"/>
+                    <button onclick="addColocataire()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black">+ Ajouter</button>
+                </div>
+            </div>
+
             <div id="admin-malus-list" class="space-y-2 mb-4"></div>
 
             <!-- NOTIFICATION CIBLÉE -->
@@ -209,12 +221,8 @@
             <div class="text-5xl mb-4">🏠</div>
             <h3 class="text-blue-600 font-black text-xl mb-2 uppercase italic">GTM Coloc</h3>
             <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Qui es-tu ? Selectionne ton nom puis abonne-toi a ton canal Ntfy.</p>
-            <div class="grid grid-cols-1 gap-3 mb-4">
-                <button onclick="setIdentity('CHIESA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">CHIESA</button>
-                <button onclick="setIdentity('ISSA')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">ISSA</button>
-                <button onclick="setIdentity('PAKITO')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">PAKITO</button>
-                <button onclick="setIdentity('GEOFFROY')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">GEOFFROY</button>
-                <button onclick="setIdentity('ISMAEL')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">ISMAEL</button>
+            <div id="identity-buttons-container" class="grid grid-cols-1 gap-3 mb-4">
+                <!-- Genere dynamiquement via buildIdentityButtons() -->
             </div>
             <div id="ntfy-instruction" class="hidden bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-4 mb-4 text-left">
                 <p class="text-blue-700 dark:text-blue-300 font-black text-sm mb-1">📱 Ton canal Ntfy :</p>
@@ -227,16 +235,41 @@
         </div>
     </div>
 
+    <!-- ÉCRAN ACCÈS RETIRÉ (personne retiree de la coloc) -->
+    <div id="access-revoked-screen" class="hidden fixed inset-0 z-[95] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-sm p-8 rounded-[3rem] shadow-2xl text-center border-2 border-red-500">
+            <div class="text-5xl mb-4">🚫</div>
+            <h3 class="text-red-600 font-black text-xl mb-2 uppercase italic">Accès retiré</h3>
+            <p id="revoked-name-display" class="text-slate-700 dark:text-slate-300 font-bold text-sm mb-3"></p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                Tu as été retiré(e) de cette colocation par l'administrateur.
+                Tu n'as plus accès à cette application.
+            </p>
+            <p class="text-slate-400 text-xs">
+                Si c'est une erreur, contacte l'administrateur pour qu'il te réintègre.
+            </p>
+        </div>
+    </div>
+
     <script>
         var SUPABASE_URL = 'https://avpxzwjxmytdcmlxtixh.supabase.co';
         var SUPABASE_KEY = 'sb_publishable_CoTpQtG8306po9DCFDRyrg_4-nC16vM';
         var HEADERS = {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json'};
 
         var NTFY_BASE = 'https://ntfy.sh/';
-        var NTFY_CHANNELS = {
-            'CHIESA': 'gtm-chiesa', 'ISSA': 'gtm-issa', 'PAKITO': 'gtm-pakito',
-            'GEOFFROY': 'gtm-geoffroy', 'ISMAEL': 'gtm-ismael', 'ALL': 'gtm-coloc-appart48'
-        };
+        var NTFY_GLOBAL_CHANNEL = 'gtm-coloc-appart48';
+
+        /* Genere un canal Ntfy unique a partir du nom — fonctionne pour n'importe quel nom */
+        function slugify(str) {
+            return str.toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') /* retire les accents */
+                .replace(/[^a-z0-9]+/g, '') /* retire tout sauf lettres/chiffres */
+                .slice(0, 20);
+        }
+        function getNtfyChannel(nom) {
+            if (!nom) return NTFY_GLOBAL_CHANNEL;
+            return 'gtm-' + slugify(nom);
+        }
 
         function sendNtfyNotification(title, body, targets, urgent) {
             var priority = urgent ? '5' : '3';
@@ -254,9 +287,9 @@
                     })
                 }).catch(function(e){ console.error('Ntfy error', e); });
             }
-            if (!targets || targets.length === 0) return ntfyPost(NTFY_CHANNELS['ALL']);
+            if (!targets || targets.length === 0) return ntfyPost(NTFY_GLOBAL_CHANNEL);
             return Promise.all(targets.map(function(nom) {
-                return ntfyPost(NTFY_CHANNELS[nom] || NTFY_CHANNELS['ALL']);
+                return ntfyPost(getNtfyChannel(nom));
             }));
         }
 
@@ -281,7 +314,8 @@
             return fetch(url, {method:'DELETE', headers:Object.assign({},HEADERS,{'Prefer':'return=minimal'})}).catch(function(){});
         }
 
-        var colocs = ["CHIESA", "ISSA", "PAKITO", "GEOFFROY", "ISMAEL"];
+        var colocs = []; /* Chargé dynamiquement depuis Supabase au démarrage */
+        /* Repartition dynamique des 5 taches fixes — voir getAssignedMissions() plus bas */
         var missions = ["🚿 Douche Gauche","🚽 WC Droit","🧹 Cuisine + Salon","🧻 WC Gauche","🚿 Douche Droite"];
 
         /* ── LISTE COMPLÈTE DES TÂCHES ── */
@@ -309,10 +343,6 @@
         var taskOverridesCache = {};
         var taskPendingChanges = {};
 
-        var ROTATION = [
-            [0,1,2,4,3], [1,2,4,3,0], [2,4,3,0,1], [4,3,0,1,2], [3,0,1,2,4]
-        ];
-
         function showToast(msg, duration) {
             duration = duration || 3000;
             var t = document.getElementById('toast');
@@ -327,6 +357,36 @@
             }, duration);
         }
 
+        /* ── REPARTITION DYNAMIQUE DES TACHES ──────────────────────────
+           Il y a 5 "espaces" fixes dans l'appart (2 douches, 2 WC,
+           cuisine+salon) — peu importe le nombre de colocataires.
+           Si moins de 5 personnes restent, elles se repartissent
+           plusieurs taches chacune cette semaine-la. Si plus de 5,
+           certains ont une semaine "off" a tour de role.
+        ──────────────────────────────────────────────────────── */
+        function getAssignedMissions(colocIdx, weekNum) {
+            var nom = colocs[colocIdx];
+            var n = colocs.length;
+            if (n === 0) return [];
+
+            /* Un override manuel admin remplace tout pour cette semaine */
+            if (weekNum === getWeekNumber() && taskOverridesCache[nom]) {
+                return [taskOverridesCache[nom]];
+            }
+
+            /* Repartition equitable : chaque tache (parmi les 5 fixes)
+               est assignee a la personne (semaine + indexTache) % nbPersonnes.
+               Cela fait tourner equitablement qui fait plusieurs taches
+               et qui en fait une seule (ou aucune si N > 5). */
+            var assigned = [];
+            for (var mIdx = 0; mIdx < missions.length; mIdx++) {
+                if (((weekNum + mIdx) % n) === (colocIdx % n)) {
+                    assigned.push(missions[mIdx]);
+                }
+            }
+            return assigned;
+        }
+
         function getWeekNumber() {
             var now = new Date();
             var startOfYear = new Date(now.getFullYear(), 0, 1);
@@ -337,14 +397,11 @@
             return Math.floor(Math.floor((monday - startOfYear) / 86400000) / 7) + 1;
         }
 
+        /* Renvoie la 1ere tache assignee — utilise pour l'historique
+           et l'affichage compact (retro-compatibilite). */
         function getMissionRaw(colocIdx, weekNum) {
-            return missions[ROTATION[colocIdx][(weekNum - 1) % 5]];
-        }
-
-        function getMission(colocIdx, weekNum) {
-            var nom = colocs[colocIdx];
-            if (weekNum === getWeekNumber() && taskOverridesCache[nom]) return taskOverridesCache[nom];
-            return getMissionRaw(colocIdx, weekNum);
+            var arr = getAssignedMissions(colocIdx, weekNum);
+            return arr.length ? arr[0] : '— Repos cette semaine —';
         }
 
         /* ── MESSAGERIE ── */
@@ -402,6 +459,10 @@
         }
 
         /* ── RENDU CARTES ── */
+        function escAttr(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
         function renderTasks(users) {
             var week = getWeekNumber();
             var c = document.getElementById('tasks-container');
@@ -409,16 +470,15 @@
             colocs.forEach(function(nom, i) {
                 var user = users.find(function(u){return u.name===nom;});
                 if (!user) return;
-                var mc = getMission(i, week);
                 var aRetard = user.tache_en_retard && !user.retard_valide;
                 var rattrapé = user.tache_en_retard && user.retard_valide;
                 var extraM = taskOverridesCache[nom + '_extra'] || '';
                 var extraHtml = extraM ? '<p class="text-[8px] text-purple-500 font-bold mt-1">➕ Bonus : ' + extraM + '</p>' : '';
 
+                /* ── CARTE RETARD (tache non faite la semaine precedente) ── */
                 if (aRetard) {
                     var mr = getMissionRaw(i, user.tache_en_retard);
                     var okRetard = user.retard_valide === true;
-                    var okActuelle = user.last_week_validated === week;
                     c.innerHTML +=
                         '<div class="mission-card mission-retard p-3 lg:p-4 rounded-3xl border-2 flex justify-between items-center">' +
                         '<div class="leading-tight"><div class="flex items-center gap-2 mb-1">' +
@@ -429,27 +489,37 @@
                         (okRetard ? '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅ Rattrape</span>' :
                             '<button onclick="validerRetard(\'' + nom + '\')" class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">RATTRAPER</button>') +
                         '</div>';
+                }
+
+                /* ── TACHE(S) DE LA SEMAINE EN COURS ──────────────────────
+                   Une personne peut avoir 0, 1 ou plusieurs taches cette
+                   semaine selon le nombre de colocataires restants. */
+                var assignedMissions = getAssignedMissions(i, week);
+                var allDone = user.last_week_validated === week;
+                var doneList = allDone ? assignedMissions.slice() :
+                    ((user.partial_week === week && user.done_missions) ? user.done_missions.split('||').filter(Boolean) : []);
+
+                if (assignedMissions.length === 0) {
+                    /* Personne au repos cette semaine (plus de colocs que de taches) */
                     c.innerHTML +=
-                        '<div class="mission-card bg-blue-50 dark:bg-blue-900/20 p-3 lg:p-4 rounded-3xl border-2 border-blue-300 flex justify-between items-center">' +
-                        '<div class="leading-tight"><div class="flex items-center gap-2 mb-1">' +
-                        '<p class="text-[8px] font-black text-blue-500 uppercase">' + nom + '</p>' +
-                        '<span class="bg-blue-500 text-white text-[7px] font-black px-2 py-0.5 rounded-full">S' + week + '</span></div>' +
-                        '<p class="font-bold text-xs dark:text-white">' + mc + '</p>' +
-                        extraHtml + '</div>' +
-                        (okActuelle ? '<span class="bg-green-500/20 text-green-600 px-4 py-2 rounded-xl text-[9px] font-bold">✅</span>' :
-                            '<button onclick="addPoints(\'' + nom + '\', this)" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[9px] shadow-lg active:scale-95">VALIDER</button>') +
-                        '</div>';
-                } else {
-                    var ok = user.last_week_validated === week;
-                    var rh = rattrapé ? '<p class="text-[8px] text-green-500 font-bold">Retard rattrape !</p>' : '';
-                    c.innerHTML +=
-                        '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">' +
+                        '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-dashed dark:border-slate-700 flex justify-between items-center opacity-70">' +
                         '<div class="leading-tight"><p class="text-[8px] font-black text-blue-500 uppercase">' + nom + '</p>' +
-                        '<p class="font-bold text-xs lg:text-base dark:text-white">' + mc + '</p>' +
-                        extraHtml + rh + '</div>' +
-                        '<button onclick="addPoints(\'' + nom + '\', this)" class="' +
-                        (ok?'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold':'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg') +
-                        '" ' + (ok?'disabled':'') + '>' + (ok?'✅':'VALIDER') + '</button></div>';
+                        '<p class="font-bold text-xs lg:text-base dark:text-white">😌 Repos cette semaine</p>' + extraHtml + '</div></div>';
+                } else {
+                    assignedMissions.forEach(function(missionText, mIdx) {
+                        var isDone = doneList.indexOf(missionText) !== -1;
+                        var badge = assignedMissions.length > 1 ? '<span class="bg-indigo-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full ml-1">' + (mIdx+1) + '/' + assignedMissions.length + '</span>' : '';
+                        var showExtra = (mIdx === 0) ? extraHtml : '';
+                        var showRattrape = (mIdx === 0 && rattrapé) ? '<p class="text-[8px] text-green-500 font-bold">Retard rattrape !</p>' : '';
+                        c.innerHTML +=
+                            '<div class="mission-card bg-slate-50 dark:bg-slate-800/40 p-3 lg:p-4 rounded-3xl border border-slate-200 dark:border-slate-700 flex justify-between items-center">' +
+                            '<div class="leading-tight"><p class="text-[8px] font-black text-blue-500 uppercase">' + nom + badge + '</p>' +
+                            '<p class="font-bold text-xs lg:text-base dark:text-white">' + missionText + '</p>' +
+                            showExtra + showRattrape + '</div>' +
+                            '<button onclick="addPoints(this.dataset.nom, this.dataset.mission)" data-nom="' + escAttr(nom) + '" data-mission="' + escAttr(missionText) + '" class="' +
+                            (isDone?'bg-green-500/20 text-green-500 px-4 py-2 rounded-xl text-[9px] font-bold':'bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-xl font-black text-[9px] lg:text-xs shadow-lg') +
+                            '" ' + (isDone?'disabled':'') + '>' + (isDone?'✅':'VALIDER') + '</button></div>';
+                    });
                 }
             });
         }
@@ -458,7 +528,18 @@
         function fetchAllData() {
             loadTaskOverrides().then(function() {
                 dbGet('scores','*',[],'points.desc').then(function(users) {
-                    if (!users || !users.length) return;
+                    if (!users || !users.length) {
+                        /* Aucun colocataire — affiche message d'accueil pour en ajouter */
+                        document.getElementById('tasks-container').innerHTML =
+                            '<div class="text-center p-8 text-slate-400"><p class="font-bold mb-2">Aucun colocataire enregistre</p><p class="text-xs">Ouvre le panel admin (5 clics sur le titre) pour en ajouter !</p></div>';
+                        colocs = [];
+                        return;
+                    }
+                    /* Met a jour la liste dynamique des colocataires.
+                       Ordre stable par id de creation pour garder la rotation coherente. */
+                    var orderedById = users.slice().sort(function(a,b){ return a.id - b.id; });
+                    colocs = orderedById.map(function(u){ return u.name; });
+
                     dbGet('logs','*',[],'created_at.desc',10).then(function(logs) {
                         document.getElementById('leaderboard').innerHTML = users.map(function(u,i){
                             var r=(u.tache_en_retard&&!u.retard_valide)?'<span class="text-red-500 text-[8px] ml-1">retard</span>':'';
@@ -477,6 +558,8 @@
                         buildTaskOverrideList();
                         buildTaskHistory();
                         buildMsgTargets();
+                        buildColocManageList(users);
+                        buildIdentityButtons();
                         window._lastUsers = users;
                         renderTasks(users);
                         renderChart(users);
@@ -516,24 +599,40 @@
             });
         }
 
-        function addPoints(nom, btn) {
+        function addPoints(nom, missionText) {
             var wn = getWeekNumber();
             dbGet('scores','*').then(function(all) {
                 var user = all.find(function(u){return u.name===nom;});
                 if (!user || user.last_week_validated===wn) return;
-                var deja = all.filter(function(u){return u.last_week_validated===wn;}).length;
-                var pts = Math.max(1, 5-deja);
+
+                var colocIdx = colocs.indexOf(nom);
+                var assigned = getAssignedMissions(colocIdx, wn);
+                if (assigned.indexOf(missionText) === -1) { showToast('Cette tache n est plus assignee a '+nom+' — actualise la page.'); return; }
+
+                /* Recupere les taches deja validees cette semaine pour cette personne */
+                var doneList = (user.partial_week === wn && user.done_missions) ? user.done_missions.split('||').filter(Boolean) : [];
+                if (doneList.indexOf(missionText) !== -1) { showToast('Deja valide !'); return; }
+                doneList.push(missionText);
+                var allDoneNow = doneList.length >= assigned.length;
+
+                var upd = {
+                    points: user.points + 1,
+                    partial_week: wn,
+                    done_missions: allDoneNow ? '' : doneList.join('||')
+                };
+                if (allDoneNow) upd.last_week_validated = wn;
+
                 fetch(SUPABASE_URL + '/rest/v1/scores?id=eq.' + user.id, {
                     method:'PATCH',
                     headers:Object.assign({},HEADERS,{'Prefer':'return=representation'}),
-                    body:JSON.stringify({points:user.points+pts, last_week_validated:wn})
+                    body:JSON.stringify(upd)
                 }).then(function(r){return r.json();}).then(function(data){
                     if (!data || (Array.isArray(data) && data.length===0)) { showToast('Erreur — reessaie !'); return; }
-                    dbInsert('logs',{name:nom,points_gagnes:pts,type:'validation'});
+                    dbInsert('logs',{name:nom,points_gagnes:1,type:'validation'});
                     playValidationSound();
-                    showToast(nom+' — +'+pts+' point'+(pts>1?'s':'')+' !');
-                    var mi = getMission(colocs.indexOf(nom), wn);
-                    sendNtfyNotification(nom+' a valide !', nom+' — '+mi+' est fait !', colocs.filter(function(c){return c!==nom;}), false);
+                    var suffix = allDoneNow ? ' — Toutes tes taches sont faites ! 🎉' : ' ('+doneList.length+'/'+assigned.length+')';
+                    showToast(nom+' — +1 point'+suffix);
+                    sendNtfyNotification(nom+' a valide une tache !', nom+' — '+missionText+' est fait !', colocs.filter(function(c){return c!==nom;}), false);
                     fetchAllData();
                 }).catch(function(e){ console.error('addPoints error:', e); showToast('Erreur reseau !'); });
             });
@@ -550,7 +649,7 @@
 
         function resetAllScores() {
             if (!confirm('Reset Total du mois ?')) return;
-            dbUpdate('scores',{points:0,last_week_validated:0,tache_en_retard:null,retard_valide:false},['id=neq.0']).then(function(){
+            dbUpdate('scores',{points:0,last_week_validated:0,tache_en_retard:null,retard_valide:false,partial_week:null,done_missions:''},['id=neq.0']).then(function(){
                 dbDelete('logs',['id=neq.0']);
                 location.reload();
             });
@@ -825,11 +924,11 @@
             icon.classList.remove('hidden');
             icon.textContent='🔔';
             var nom=localStorage.getItem('gtm-coloc-identity');
-            icon.title='Canal Ntfy : '+(nom?(NTFY_CHANNELS[nom]||'gtm-coloc-appart48'):'gtm-coloc-appart48');
+            icon.title='Canal Ntfy : '+getNtfyChannel(nom);
         }
         function showNotifInfo() {
             var nom=localStorage.getItem('gtm-coloc-identity');
-            showToast('Canal Ntfy : '+(nom?(NTFY_CHANNELS[nom]||'gtm-coloc-appart48'):'gtm-coloc-appart48'));
+            showToast('Canal Ntfy : '+getNtfyChannel(nom));
         }
 
         /* ── SONS ── */
@@ -866,19 +965,72 @@
         function closeAdmin(){document.getElementById('admin-panel').classList.add('hidden');selectedNotifTargets=[];}
 
         /* ── IDENTITE ── */
-        function checkIdentity() {
-            var nom=localStorage.getItem('gtm-coloc-identity');
-            if (!nom) document.getElementById('identity-modal').classList.remove('hidden');
-            else { updateHeaderIdentity(nom); updateNotifStatusUI(); }
+        /* Genere les boutons d'identite dynamiquement selon les colocataires actuels */
+        function buildIdentityButtons() {
+            var c = document.getElementById('identity-buttons-container');
+            if (!c) return;
+            if (!colocs.length) {
+                c.innerHTML = '<p class="text-slate-400 text-sm">Aucun colocataire enregistre pour le moment.</p>';
+                return;
+            }
+            c.innerHTML = colocs.map(function(nom) {
+                return '<button onclick="setIdentity(this, \'' + nom + '\')" class="identity-btn bg-blue-600 text-white py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-lg">' + nom + '</button>';
+            }).join('');
         }
-        function setIdentity(nom) {
+
+        function checkIdentity() {
+            var nom = localStorage.getItem('gtm-coloc-identity');
+            var removedName = localStorage.getItem('gtm-coloc-removed-name');
+
+            /* CAS 1 : la personne etait deja bloquee lors d'une visite precedente */
+            if (removedName) {
+                if (colocs.indexOf(removedName) !== -1) {
+                    /* L'admin l'a reintegree a la coloc — leve le blocage automatiquement */
+                    localStorage.removeItem('gtm-coloc-removed-name');
+                    localStorage.setItem('gtm-coloc-identity', removedName);
+                    document.getElementById('access-revoked-screen').classList.add('hidden');
+                    updateHeaderIdentity(removedName);
+                    updateNotifStatusUI();
+                    showToast('Bon retour ' + removedName + ' ! Tu as ete reintegre a la coloc.');
+                } else {
+                    showAccessRevoked(removedName);
+                }
+                return;
+            }
+
+            /* CAS 2 : identite active mais qui n'existe plus dans la coloc -> blocage */
+            if (nom && colocs.indexOf(nom) === -1) {
+                localStorage.removeItem('gtm-coloc-identity');
+                localStorage.setItem('gtm-coloc-removed-name', nom);
+                showAccessRevoked(nom);
+                return;
+            }
+
+            /* CAS 3 : pas d'identite du tout -> ecran de choix normal */
+            if (!nom) {
+                document.getElementById('identity-modal').classList.remove('hidden');
+                return;
+            }
+
+            /* CAS 4 : tout est normal */
+            updateHeaderIdentity(nom);
+            updateNotifStatusUI();
+        }
+
+        function showAccessRevoked(nom) {
+            document.getElementById('identity-modal').classList.add('hidden');
+            document.getElementById('revoked-name-display').textContent = nom;
+            document.getElementById('access-revoked-screen').classList.remove('hidden');
+        }
+
+        function setIdentity(btnEl, nom) {
             localStorage.setItem('gtm-coloc-identity', nom);
-            var channel=NTFY_CHANNELS[nom]||'gtm-coloc-appart48';
+            var channel=getNtfyChannel(nom);
             document.getElementById('ntfy-channel-display').textContent=channel;
             document.getElementById('ntfy-instruction').classList.remove('hidden');
             document.getElementById('ntfy-confirm-btn').classList.remove('hidden');
             document.querySelectorAll('.identity-btn').forEach(function(b){b.style.background='#94a3b8';});
-            event.target.style.background='#16a34a';
+            if (btnEl) btnEl.style.background='#16a34a';
         }
         function confirmIdentity() {
             var nom=localStorage.getItem('gtm-coloc-identity');
@@ -893,7 +1045,54 @@
         }
         function changeIdentity() {
             localStorage.removeItem('gtm-coloc-identity');
+            buildIdentityButtons();
             document.getElementById('identity-modal').classList.remove('hidden');
+        }
+
+        /* ── GESTION DYNAMIQUE DES COLOCATAIRES ───────────────────────
+           Permet d'ajouter ou retirer des colocataires directement
+           depuis l'app, sans toucher au code.
+        ──────────────────────────────────────────────────────── */
+        function buildColocManageList(users) {
+            var c = document.getElementById('coloc-manage-list');
+            if (!c) return;
+            c.innerHTML = users.map(function(u) {
+                return '<div class="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-xl">' +
+                    '<span class="text-xs font-bold">' + u.name + ' <span class="text-slate-400 font-normal">(' + u.points + ' pts)</span></span>' +
+                    '<button onclick="removeColocataire(' + u.id + ', \'' + u.name + '\')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-[10px] font-black">Retirer</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function addColocataire() {
+            var input = document.getElementById('new-coloc-name');
+            var nom = input.value.trim().toUpperCase();
+            if (!nom) { showToast('Ecris un nom !'); return; }
+            if (colocs.indexOf(nom) !== -1) { showToast(nom + ' existe deja !'); return; }
+            dbInsert('scores', {
+                name: nom, points: 0, last_week_validated: 0,
+                tache_en_retard: null, retard_valide: false
+            }).then(function() {
+                showToast(nom + ' a ete ajoute a la coloc !');
+                input.value = '';
+                fetchAllData();
+            });
+        }
+
+        function removeColocataire(id, nom) {
+            if (!confirm('Retirer ' + nom + ' de la coloc ?\n\nSon historique de points sera conserve dans les logs, mais il ne fera plus partie de la rotation des taches.')) return;
+            dbDelete('scores', ['id=eq.'+id]).then(function() {
+                /* Nettoie aussi ses overrides de taches en cours */
+                var wn = getWeekNumber();
+                dbDelete('task_overrides', ['nom=eq.'+nom, 'semaine=eq.'+wn]);
+                dbDelete('task_overrides', ['nom=eq.'+nom+'_extra', 'semaine=eq.'+wn]);
+                /* Si c'etait son identite locale, la reset */
+                if (localStorage.getItem('gtm-coloc-identity') === nom) {
+                    localStorage.removeItem('gtm-coloc-identity');
+                }
+                showToast(nom + ' a ete retire de la coloc.');
+                fetchAllData();
+            });
         }
 
         /* ── MÉNAGE GÉNÉRAL ── */
@@ -910,6 +1109,7 @@
         }
 
         /* ── INIT ── */
+        var _firstLoadDone = false;
         function init() {
             if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.getElementById('theme-icon').innerText='🌙';}
             document.getElementById('week-info').innerText='Semaine n°'+getWeekNumber();
@@ -920,9 +1120,16 @@
                 });
             }
             setTimeout(updateNotifStatusUI, 2000);
-            checkIdentity();
             checkMenageGeneral();
+            /* Charge d'abord les colocataires depuis Supabase, PUIS verifie l'identite */
             fetchAllData();
+            var waitForColocs = setInterval(function() {
+                if (!_firstLoadDone && window._lastUsers !== undefined) {
+                    _firstLoadDone = true;
+                    clearInterval(waitForColocs);
+                    checkIdentity();
+                }
+            }, 200);
             setInterval(function(){
                 if(document.getElementById('admin-panel').classList.contains('hidden')){
                     loadTaskOverrides().then(function(){ if(window._lastUsers) renderTasks(window._lastUsers); });
@@ -931,6 +1138,12 @@
             setInterval(function(){
                 if(document.getElementById('admin-panel').classList.contains('hidden')) fetchAllData();
             }, 30000);
+            /* Verifie en continu que l'identite est toujours valide —
+               coupe l'acces immediatement si quelqu'un est retire pendant
+               qu'il utilise l'app, sans attendre un rechargement manuel. */
+            setInterval(function(){
+                if (_firstLoadDone) checkIdentity();
+            }, 5000);
         }
         init();
     </script>
